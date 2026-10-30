@@ -1,28 +1,42 @@
-// The Scream, Disturbed
-// Base skeleton. Step numbers match "The mechanics, one concept at a time" in the guide.
-
-// The screamer's current state: "watching", "distracted", "calm" or "lunge"
 let state = "watching";
+let screamer;
+
+let world;
+let timer;
+let controls;
+let audio;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
+  screamer = { x: width / 2, y: height * 0.65, r: 60 };
 
-  // TODO (step 2): create the swirling lines for the sky, fjord and bridge
-  // TODO (step 3): pick when the first random event happens
+  world = new NoiseLayer();
+  timer = new DistractionTimer();
+  controls = new InputControls();
+  audio = new AudioMixer();
 }
 
 function draw() {
   background(20);
 
-  // TODO (step 2): update and draw the swirling world
-  // TODO (step 3): check for and draw random events (passerby, boat, bird)
-  // TODO (step 4): check the hidden timer and update `state`
-  // TODO (step 1): draw the screamer, eyes following the cursor
-  // TODO (step 1): draw your own cursor (the insect)
+  world.update();
+  timer.update();
+  controls.update();
+  audio.update();
+
+  world.draw();
+  drawScreamer();
+  controls.draw();
+}
+
+function drawScreamer() {
+  noStroke();
+  fill(220);
+  ellipse(screamer.x, screamer.y, screamer.r * 2);
 }
 
 function mousePressed() {
-  // TODO (step 5): was he clicked? Window open -> calm, otherwise -> lunge
+  controls.clicked();
 }
 
 function windowResized() {
