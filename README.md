@@ -2,32 +2,27 @@
 
 ## Overview
 
-This project recreates our approved Figma artwork,
-“The Scream · Editable Vector”, using p5.js.
+We started from our Figma redraw of Munch's *The Scream* and rebuilt it in p5.js.
 
-The current version is a static drawing base. It preserves the main
-composition and separate colour shapes, while replacing gradients
-with solid colours to simplify the drawing code.
+This is the static base that all four mechanics draw on top of.
+We kept the same layout and colour shapes as the Figma version, but swapped
+the gradients for flat colours so the drawing code stays short and easy to edit.
 
-The maximum canvas size is 525 × 639 pixels.
+## How the drawing is organised
+Everything is drawn on one canvas, split into seven functions:
 
-## Drawing sections
+| Function | What it draws |
+| --- | --- |
+| `drawSky()` | the eight bands of the sky |
+| `drawMountains()` | the distant hills and the deep sea |
+| `drawBlueLines()` | five blue contour lines in the water |
+| `drawLake()` | the lake, its reflections and the boats |
+| `drawRightLake()` | the six shapes along the right shoreline |
+| `drawBridge()` | the walkway, its shadow, the posts and the rails |
+| `drawFigure()` | the body, the folds in the robe, the face and the hands |
 
-| Section | Function | Contents |
-| --- | --- | --- |
-| sky | drawSky() | Eight sky colour shapes |
-| mountains | drawMountains() | Distant hills and deep sea |
-| blueLines | drawBlueLines() | Five blue contour lines |
-| lake | drawLake() | Water, reflections and boats |
-| rightLake | drawRightLake() | Six shoreline colour shapes |
-| bridge | drawBridge() | Walkway, shadow, posts and rails |
-| figure | drawFigure() | Body, folds, face and hands |
-
-These sections share one canvas. They are logical drawing groups,
-rather than separate Figma layers or separate HTML canvases.
-
-The order of calls in draw() controls which sections appear
-in front of others.
+`draw()` calls them from back to front, so changing the order changes
+what sits in front of what.
 
 
-## Time-based Part
+## Time-based mechanic (Qiaoyi Xin)
