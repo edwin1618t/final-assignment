@@ -25,4 +25,13 @@ Everything is drawn on one canvas, split into seven functions:
 what sits in front of what.
 
 
+## Input mechanic ()
+
+
 ## Time-based mechanic (Qiaoyi Xin)
+
+
+## Audio mechanic ()
+
+
+## Perlin noise and randomness mechanic ()

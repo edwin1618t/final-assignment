@@ -1,16 +1,4 @@
-// The Scream — named drawing sections.
-// ChatGPT assisted with converting and simplifying the Figma artwork.
-//
-// Part labels use section.partName.
-// These comments identify drawing parts; they are not control variables.
-//
-// Additional technique: cubic curves.
-// Reference: https://archive.p5js.org/reference/#/p5/bezierVertex
-
-// SVG renderer extension, beyond the reviewed course drawing methods.
-// p5.js-svg 1.6.0 with p5.js 1.11.3:
-// https://github.com/zenozeng/p5.js-svg
-// The existing p5.js shape functions now produce SVG vector elements.
+// The Scream 
 
 function setup() {
   let picture = createCanvas(1050, 1278, SVG);
