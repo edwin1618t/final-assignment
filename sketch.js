@@ -24,6 +24,8 @@ function draw() {
   clear();
   background("#102C51");
   updateTimeBased();
+  // ChatGPT assisted with updating the input data before drawing the eyes.
+  updateInputControls();
 
   // Apply the time-based wave to the background outlines.
   waveEnabled = true;
@@ -434,10 +436,11 @@ function drawFigure() {
   fill("#0B2D4E");
 
   // Part: figure.leftEye
-  ellipse(441, 721, 14, 33);
+  // ChatGPT assisted with connecting both eyes to drawTrackingEye().
+  drawTrackingEye(441, 721);
 
   // Part: figure.rightEye
-  ellipse(508, 715, 14, 33);
+  drawTrackingEye(508, 715);
 
   // Part: figure.mouth
   ellipse(481, 808, 34, 81);
