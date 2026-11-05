@@ -39,7 +39,18 @@ random passers-by who distract him.
 - **Perlin noise + randomness:** `noise(x, y, time)` moves every point of the sky, hills and water up and down, so the whole background waves while the bridge and the screamer stay still. `noise()` also makes the sky and water colours shimmer lighter and darker, and `randomSeed()` / `noiseSeed()` give every visit its own pattern. `random()` picks which event happens and when; in the boat crash, `dist()` detects when two boats hit, and they rock with `rotate()`.
 - **Time-based:** `millis()` times a hidden 5–10 second window after each event, plus how long the sting (pimple, floating away, coming back) and the jump scare last. A simple state machine: watching → distracted → stung or scare → watching.
 - **User input:** `mouseX`/`mouseY`, his face is the hitbox (an oval check), bounded dark pupils follow the bee and enlarge with proximity; during distraction they look at the event, `mousePressed()` for the click, `noCursor()` with our bee drawn in p5 (wings flutter with `sin()` and `rotate()`).
-- **Audio:** two looping tracks with p5.sound. `setVolume()` crossfades opera → screech as you get closer, and `p5.Amplitude().getLevel()` measures the real loudness, which makes the background wave harder. `p5.FFT` splits the sound into 32 frequencies that bend three wavy sound rings around his face.
+- **Audio:** The audio mechanic combines interactive mixing with visuals driven by measured sound.
+
+    - **Distance-based mixing:** Opera and screech loops play together. Distance controls their relative volumes through `setVolume()`, with short fades to smooth changes and a minimum opera level to retain the musical background.
+    - **Bee spatial sound:** `pan()` moves the buzzing between left and right channels. During distraction, the bee becomes louder and receives small, smoothed playback-rate changes that vary its pitch.
+    - **State-based sound:** Distraction adds a looping cue and a low-frequency layer. Gain controls reduce competing sounds, then restore the mix as distraction ends. Sting and jump-scare sounds provide distinct action feedback.
+    - **Loudness analysis:** `p5.Amplitude` measures the overall mix. Separate Web Audio analyser branches measure individual sources without adding another audible playback path.
+    - **Scream contours:** A 1024-bin `p5.FFT` analyses the scream. Measured loudness and low, mid and high frequency energy shape five curved contours around the face. Smoothed responses and delayed samples carry changes through successive contours.
+    - **Bridge texture:** Measured opera loudness and frequency energy change the width and curvature of grain-like ribbons within the wooden rails and posts. Peaks in the distraction cue trigger travelling accents along the bridge.
+    - **Distraction guidance:** The face contours contract during distraction. Bass energy influences their breathing movement, while eligible hovering adds a visual highlight to guide the sting interaction.
+    - **Stereo print effect:** The same smoothed pan value used for the bee sound controls coloured edge impressions. This visual uses the audio control parameter, rather than measured waveform or frequency data.
+
+    The face contours and bridge texture demonstrate the central audio mechanic: actual sound amplitude and frequency influence the image.
 
 ## Mechanic ownership
 
@@ -58,10 +69,27 @@ Drawing: our team's Figma redraw of the painting.
 
 - Our Figma drawing was converted into p5.js shape code with help from AI.
 - Claude (Anthropic) helped write, organise and comment the code in this repository: the mechanic classes, the screamer and jump scare, the window fitting, and the audio mixing. Each file says this in a comment at the top. We tested the code and can explain how each part works (see the comments).
+- ChatGPT / Codex assisted with subsequent audio development
 - The bee design (bee.svg) was made with help from ChatGPT; we redrew it in p5.js.
-
+- ElevenLabs was used to generate the opera background (`CW_Opera`). The other six audio assets were created through original sound synthesis and recording using virtual instruments.
 ## External references
 
 - p5.js reference: https://p5js.org/reference/
 - p5.sound (official p5.js sound add-on), used for `loadSound()`, `setVolume()` and `p5.Amplitude`: https://p5js.org/reference/p5.sound/
-- `assets/sounds/opera-placeholder.mp3`, `screech-placeholder.mp3` and `sting-placeholder.mp3` are simple stand-in sounds made for this project. [Replace with your final tracks and credit their source here.]
+-  Audio assets and credits
+
+    The final audio assets replace the original placeholder tracks.
+
+    The opera background was generated using ElevenLabs. All other sounds were originally designed, synthesised and recorded by the audio contributor (GitHub: Cwan0294), using Serum, Sub Zero Bass, Augmented VOICES and other VST instruments.
+
+    | Asset name | Role | Source / production |
+    | --- | --- | --- |
+    | `CW_Bee` | Bee buzzing | Original synthesised sound |
+    | `CW_bit` | Sting sound effect | Original synthesised sound |
+    | `CW_Distrace` | Distraction cue | Original synthesised sound |
+    | `CW_Jumpscare(2)` | Jump-scare sound effect | Original synthesised sound |
+    | `CW_Opera` | Opera background | AI-generated audio created using ElevenLabs |
+    | `CW_Screaming` | Screaming sound | Original synthesised sound |
+    | `CW_Sub` | Low-frequency distraction layer | Original synthesised sound |
+
+    Asset names are listed without file extensions.
