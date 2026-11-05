@@ -1,4 +1,12 @@
-* { box-sizing: border-box; }
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  margin: 0;
+  min-height: 100%;
+}
 
 body {
   margin: 0;
@@ -12,20 +20,34 @@ body {
 
 #artwork {
   box-sizing: content-box;
-  width: min(360px, calc(100vw - 80px), calc((100vh - 80px) * 1050 / 1278));
-  width: min(360px, calc(100vw - 80px), calc((100svh - 80px) * 1050 / 1278));
+
+  width: min(
+    360px,
+    calc(100vw - 80px),
+    calc((100vh - 80px) * 1050 / 1278)
+  );
+
+  width: min(
+    360px,
+    calc(100vw - 80px),
+    calc((100svh - 80px) * 1050 / 1278)
+  );
+
   aspect-ratio: 1050 / 1278;
+
   min-width: 0;
   min-height: 0;
+
   overflow: hidden;
+
   padding: 5px;
   border: 13px solid #514032;
+
   background: #B59865;
   box-shadow: 7px 9px 0 #040D19;
 }
 
-/* p5.js gives the SVG wrapper inline dimensions in drawing units.
-   Override those dimensions so it fits the smaller picture frame. */
+/* Fit the SVG drawing inside the artwork frame. */
 #artwork > div {
   display: block !important;
   width: 100% !important;
@@ -33,21 +55,15 @@ body {
   min-width: 0;
 }
 
+/* Original artwork SVG. */
 #artwork svg {
   display: block;
   width: 100% !important;
   height: auto !important;
   max-width: 100%;
+
   overflow: hidden;
   outline: 2px solid #172132;
-  shape-rendering: geometricPrecision;
-}
 
-/* Bee cursor. Hotspot is near the head.
-   https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/cursor */
-html,
-body,
-#artwork,
-#artwork * {
-  cursor: url("./bee.svg") 16 8, auto;
+  shape-rendering: geometricPrecision;
 }

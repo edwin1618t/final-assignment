@@ -1,9 +1,22 @@
-// The Scream 
+
+/*
+The Scream
+IDEA9103 Creative Coding
+
+Scene drawing and User Input integration.
+*/
+
+// Load User Input assets.
+function preload() {
+  preloadInputControls();
+}
 
 function setup() {
   let picture = createCanvas(1050, 1278, SVG);
   picture.parent("artwork");
   frameRate(30);
+
+  setupInputControls();
 }
 
 function draw() {
@@ -29,6 +42,9 @@ function draw() {
   waveEnabled = false;
   drawBridge();
   drawFigure();
+
+  // USER INPUT: Draw the bee on top of the artwork.
+  drawBeeCursor();
 }
 
 // SECTION: sky
