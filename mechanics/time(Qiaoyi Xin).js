@@ -1,7 +1,16 @@
-// Time mechanic: hover growth, attention, recovery and the team's event timers.
-// The original event timers were developed with Claude assistance.
-// ChatGPT helped adapt Qiaoyi's hover interaction to this shared structure.
-// Course basis: Week 7 objects/classes and Week 11 frameCount/lerp/transforms.
+// ===== MECHANIC 2: TIME-BASED =====
+// Gentle sine waves move the background; the lake stays still until hovered over.
+// Holding the bee in one area for about 3 seconds makes a local distortion grow.
+// The figure looks at it for 1 second, then shakes and leaves if the bee stays.
+// Moving away before he leaves cancels the reaction and lets the distortion fade.
+// frameCount controls the hover timing, and lerp() smooths the changes.
+// The team's existing millis() timers handle distractions and leaving/returning.
+// AI acknowledgement: the original shared event timers were written with help
+// from Claude (AI). ChatGPT assisted with Qiaoyi's background waves, hover timing,
+// smooth transitions and figure reactions, connected to the team's eye tracking
+// and leave-and-return animation. See README.md.
+// Timing and movement were refined based on Qiaoyi's feedback.
+// Course basis: Week 7 classes, Week 8 sin(), Week 11 frameCount/lerp/transforms.
 // https://p5js.org/reference/p5/frameCount/
 // https://p5js.org/reference/p5/lerp/
 
@@ -77,7 +86,7 @@ class DistractionTimer {
     let x = mouseInPainting.x;
     let y = mouseInPainting.y;
     let onBackground = false;
-    this.shakeStrength = 0;
+    let targetShake = 0;
 
     if (focused && state === "watching" && this.backgroundMask &&
         x >= 0 && x < 1050 && y >= 0 && y < 1278) {
@@ -97,11 +106,10 @@ class DistractionTimer {
         this.hoverY = y;
       }
 
-      // A small dent starts immediately and follows the moving bee.
+      // Start at the mouse position while the dent is still invisible.
       if (this.dentStrength <= 0) {
         this.dentX = x;
         this.dentY = y;
-        this.dentStrength = 0.22;
       } else {
         this.dentX = lerp(this.dentX, x, 0.2);
         this.dentY = lerp(this.dentY, y, 0.2);
@@ -109,28 +117,28 @@ class DistractionTimer {
 
       let elapsedFrames = frameCount - this.hoverStartFrame;
       let progress = constrain(elapsedFrames / this.hoverFrames, 0, 1);
-      let growth = progress * progress * (3 - 2 * progress);
-      let target = lerp(0.22, 1, growth);
+      let target = lerp(0.22, 1, progress);
       // Losing a hold should not snap the shape back.
-      let easing = target < this.dentStrength ? 0.04 : 0.5;
+      let easing = target < this.dentStrength ? 0.04 : 0.12;
       this.dentStrength = lerp(this.dentStrength, target, easing);
       this.noticed = elapsedFrames >= this.hoverFrames;
       if (this.noticed) {
-        this.dentStrength = 1;
         // Look for one second, then shake if the bee keeps staying here.
         let reactionFrames = elapsedFrames - this.hoverFrames;
-        this.shakeStrength = constrain(
+        targetShake = constrain(
           (reactionFrames - this.lookFrames) / this.shakeFrames, 0, 1);
         if (reactionFrames >= this.lookFrames + this.shakeFrames) {
           this.fleeFromHover();
+          targetShake = 0;
         }
       }
     } else {
       this.resetHover();
     }
 
-    this.attention = lerp(this.attention, this.noticed ? 1 : 0,
-      this.noticed ? 0.25 : 0.035);
+    // Ease both into and out of the reaction.
+    this.shakeStrength = lerp(this.shakeStrength, targetShake, 0.15);
+    this.attention = lerp(this.attention, this.noticed ? 1 : 0, 0.08);
 
     // A nearby dent can pull him in after he notices it.
     let nearby = constrain(1 - dist(this.dentX, this.dentY, 474, 800) / 700, 0, 1);
@@ -143,8 +151,6 @@ class DistractionTimer {
     screamer.awayX = edge[0];
     screamer.awayY = edge[1];
     this.resetHover();
-    this.attention = 0;
-    this.figureStrength = 0;
     // "stung" already runs the team's leave-and-return animation.
     // Reuse that state without adding a sting, a sound or a pimple.
     changeState("stung");
@@ -159,7 +165,6 @@ class DistractionTimer {
       this.releaseStrength = this.dentStrength;
     }
     this.noticed = false;
-    this.shakeStrength = 0;
     let progress = constrain(
       (frameCount - this.releaseStartFrame) / this.releaseFrames, 0, 1);
     // Smooth recovery, with no bounce past the original shape.
@@ -256,9 +261,10 @@ class DistractionTimer {
   }
 
   figureTransform() {
-    let strength = state === "watching" ? this.figureStrength : 0;
+    // Keep the current pose as he starts leaving, then let it relax.
+    let strength = state === "scare" ? 0 : this.figureStrength;
     let direction = constrain((this.dentX - 474) / 240, -1, 1);
-    let shake = state === "watching" ? this.shakeStrength : 0;
+    let shake = state === "scare" ? 0 : this.shakeStrength;
     return {
       x: constrain(this.dentX - 474, -400, 400) * strength * 0.1
         + sin(frameCount * 1.7) * shake * 10,
