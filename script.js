@@ -81,6 +81,8 @@ function draw() {
   noiseLayer.drawBoats();
   drawRightLake();
   drawBridge();
+  audio.drawPanPrint();
+  audio.drawBridgeAudio();
   noiseLayer.drawPasserby();
   audio.drawFaceDistortion();
   drawScreamer();

@@ -2,8 +2,8 @@
 // Two sound tracks play at the same time: an opera voice and a horrible screech.
 // When the bee is far from the screamer you hear the opera.
 // As it gets closer to his face, the opera gets quieter and the screech gets louder.
-// p5.Amplitude measures how loud the sound really is, and that loudness drives the visuals:
-// the sky and water wave harder, and five related contours bend around his face.
+// The master p5.Amplitude still drives the sky and water. Separate source taps
+// drive the rail score and the scream contours without changing playback.
 // Delayed loudness and frequency bands (p5.FFT) carry broad bends out through the layers.
 // This uses p5.sound, the official sound add-on for p5.js (https://p5js.org/reference/p5.sound/).
 // AI acknowledgement: this file was written with help from Claude (AI). See README.md.
@@ -48,8 +48,8 @@ const AUDIO_SETTINGS = {
 const AUDIO_VISUAL_SETTINGS = {
   motionAmplitude: 170, // Coordinate displacement gain, with a 140-unit ceiling.
   contourSpacing: 28,   // Base distance between neighbouring contours.
-  sensitivity: 26,      // Visual gain before compression; not playback volume.
-  noiseGate: 0.0015,
+  sensitivity: 38,      // Visual gain before compression; not playback volume.
+  noiseGate: 0.0008,
   compressionPower: 0.85,
   attackMs: 45,
   releaseMs: 230,
@@ -96,6 +96,39 @@ const AUDIO_DISTRACTION_SETTINGS = {
 };
 
 
+// Painting units and milliseconds; these controls never change playback.
+// CW_Distrace.wav: main attacks near 60 and 340 ms, tail RMS below 0.010
+// at its existing 0.7 volume. 0.016/0.0064 hysteresis rejects the tail.
+const BRIDGE_AUDIO_VISUAL_SETTINGS = {
+  enabled: true,
+  operaSensitivity: 55, // Post-Gain RMS: normal opera is roughly 0.012–0.04.
+  textureContrast: 0.9,
+  mainGrainWidth: 0.35, // Strong-sound width, as a fraction of local timber width.
+  bendAmplitude: 0.18,  // Maximum lateral centre movement in local timber widths.
+  surfaceDelayMs: 35,   // Small stagger between horizontal rails.
+  propagationMs: 320,
+  cueThreshold: 0.016,
+  cueHysteresis: 0.4,
+  cueCooldownMs: 160,
+  cueTravelDurationMs: 580,
+  cueAccentMs: 210,
+  exitFadeMs: 200,
+  maxAccents: 3,
+  debug: false
+};
+
+// Edge print only: painting units, opacity 0..1, response in milliseconds.
+const PAN_PRINT_SETTINGS = {
+  enabled: true,
+  deadZone: 0.08,
+  maxBandWidth: 350, // Up to 35% of the painting; the central figure is drawn later.
+  maxOffset: 64,    // Outward plate separation, capped at 75 painting units.
+  opacity: 0.9,
+  responseMs: 100,  // Visual volume envelope; pan already has audio smoothing.
+  debug: false,
+  testPan: null     // Debug only: null = real beePan; -1 / 0 / 1 = visual override.
+};
+
 class AudioMixer {
 
   // ----- set up the sound -----
@@ -103,6 +136,9 @@ class AudioMixer {
     // browsers only allow sound after the first click, so it starts switched off
     this.started = false;
     this.beePan = 0;
+    this.beeVisualVolumeTarget = 0;
+    this.beeVisualVolume = 0;
+    this.panPrintBuffers = null;
     this.beePitch = 0;
     this.beePitchTarget = 0;
     this.nextBeePitchTime = 0;
@@ -130,8 +166,26 @@ class AudioMixer {
     this.meter = new p5.Amplitude();
 
     // At 44.1/48 kHz, 1024 bins resolve about 22/23 Hz per bin.
-    // Keep listening to the master mix; smoothing below uses elapsed time.
+    // Set the isolated FFT first: p5.sound setInput disconnects the shared
+    // FFT meter. Construct the original mix FFT afterwards for distraction.
+    this.screamFFT = new p5.FFT(0, AUDIO_VISUAL_SETTINGS.fftBins);
+    this.screamFFT.setInput(this.screechGain.output);
     this.fft = new p5.FFT(0, AUDIO_VISUAL_SETTINGS.fftBins);
+    // Native, unconnected-output analysers are silent measurement branches.
+    // Tap AFTER the existing SoundFile volume and the two existing Gains.
+    this.operaProbe = this.makeVisualProbe(this.operaGain.output);
+    this.cueProbe = this.makeVisualProbe(distractionSound.output);
+    this.screamProbe = this.makeVisualProbe(this.screechGain.output);
+    this.bridgeAccents = [];
+    this.bridgeHistory = [];
+    this.bridgeGeometry = null;
+    this.bridgeEnvelope = { opera: 0, cue: 0, lowMid: 0 };
+    this.bridgeSpectrum = new Float32Array(this.operaProbe.node.frequencyBinCount);
+    this.bridgeSync = true;
+    this.bridgeCueArmed = true;
+    this.bridgeLastCue = -Infinity;
+    this.bridgeCueCount = 0;
+    this.bridgeNow = 0;
     this.visualSpectrum = [];
     this.visualHistory = [];
     this.visualEnvelope = { level: 0, low: 0, mid: 0, high: 0 };
@@ -162,7 +216,8 @@ class AudioMixer {
     operaSound.setVolume(AUDIO_SETTINGS.operaVolume);
     screechSound.setVolume(0);
     stingSound.setVolume(AUDIO_SETTINGS.stingVolume);
-    beeSound.setVolume(this.isBeeInsideFrame() ? AUDIO_SETTINGS.beeVolume : 0);
+    this.beeVisualVolumeTarget = this.isBeeInsideFrame() ? AUDIO_SETTINGS.beeVolume : 0;
+    beeSound.setVolume(this.beeVisualVolumeTarget);
     this.beePan = constrain(map(mouseX, 0, max(width, 1), -1, 1), -1, 1);
     beeSound.pan(this.beePan);
     // loop() plays a track over and over
@@ -225,7 +280,10 @@ class AudioMixer {
 
   // Trigger once on entry, even if a state ends and restarts in the same frame.
   onStateChange(previousState, newState) {
-    if (previousState !== newState) this.onGuidanceStateChange(newState);
+    if (previousState !== newState) {
+      this.onGuidanceStateChange(newState);
+      this.onBridgeStateChange(newState);
+    }
     // Clear immediately, even when transitions happen between draw frames.
     if (previousState !== newState &&
         [previousState, newState].some(value => value === "stung" || value === "scare")) {
@@ -277,7 +335,13 @@ class AudioMixer {
     this.updateSubMix();
     const beeVolume = lerp(AUDIO_SETTINGS.beeVolume, AUDIO_SETTINGS.subBeeVolume, this.subMix);
     // The boosted bee still becomes silent outside the frame.
-    beeSound.setVolume(this.isBeeInsideFrame() ? beeVolume : 0, 0.1);
+    this.beeVisualVolumeTarget = this.isBeeInsideFrame() ? beeVolume : 0;
+    beeSound.setVolume(this.beeVisualVolumeTarget, 0.1);
+    // Follow the existing volume target for visuals only; no audio automation added.
+    const volumeBlend = 1-Math.exp(-Math.max(0,deltaTime) /
+      Math.max(1,PAN_PRINT_SETTINGS.responseMs));
+    this.beeVisualVolume = lerp(this.beeVisualVolume,
+      this.beeVisualVolumeTarget,volumeBlend);
 
     // Small random pitch targets, smoothed into a continuous flutter during Sub.
     if (this.subMix > 0 && millis() >= this.nextBeePitchTime) {
@@ -329,9 +393,349 @@ class AudioMixer {
     // move the level slowly towards the loudness so the visuals don't flicker
     // (lerp() moves it 20% of the way each frame)
     this.level = lerp(this.level, loudness, 0.2);
-    this.updateFaceVisuals(rawLoudness);
+    this.updateBridgeVisuals();
+    const screamLevel = this.readVisualProbe(this.screamProbe);
+    this.updateFaceVisuals(state === "distracted" ? rawLoudness : screamLevel);
   }
 
+
+
+
+  panPrintParameters() {
+    const v = PAN_PRINT_SETTINGS;
+    const pan = constrain(v.debug && Number.isFinite(v.testPan) ? v.testPan : this.beePan,-1,1);
+    const t = constrain((Math.abs(pan)-constrain(v.deadZone,0,0.95)) /
+      (1-constrain(v.deadZone,0,0.95)),0,1);
+    const strength = t*t*(3-2*t);
+    // Normal 0.03 volume means full visibility, not 3% opacity.
+    const volume = constrain(this.beeVisualVolume/Math.max(0.001,AUDIO_SETTINGS.beeVolume),0,1.15);
+    const visibility = constrain(t/0.35,0,1);
+    const maxBand = constrain(v.maxBandWidth,0,1050*0.35);
+    return { pan, strength, side: pan < 0 ? -1 : 1,
+      band: maxBand*(0.78+0.22*strength),
+      offset: constrain(v.maxOffset,0,75)*strength,
+      alpha: constrain(v.opacity*volume,0,1)*visibility*visibility*(3-2*visibility) };
+  }
+
+  drawPanPrint() {
+    const v = PAN_PRINT_SETTINGS;
+    if (!v.enabled || !this.started || state === "stung" || state === "scare") return;
+    const p = this.panPrintParameters();
+    if (p.strength === 0 || p.alpha < 0.002 || p.band <= 0 || painting.scale <= 0) return;
+    // One bounded side sample at half painting resolution, with shift allowance.
+    // Only this local strip is read back (143k pixels), never the full screen.
+    // Canvases and the two output ImageData arrays are reused across frames/resizes.
+    if (!this.panPrintBuffers) {
+      const make = read => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 224; canvas.height = 639;
+        const ctx = canvas.getContext("2d", { willReadFrequently: read });
+        return { canvas, ctx };
+      };
+      const source = make(true), orange = make(false), blue = make(false);
+      orange.pixels = orange.ctx.createImageData(224,639);
+      blue.pixels = blue.ctx.createImageData(224,639);
+      orange.coverage = new Uint8Array(224*639);
+      blue.coverage = new Uint8Array(224*639);
+      for (let i=0;i<orange.pixels.data.length;i+=4) {
+        orange.pixels.data[i]=176; orange.pixels.data[i+1]=106; orange.pixels.data[i+2]=85;
+        blue.pixels.data[i]=18; blue.pixels.data[i+1]=49; blue.pixels.data[i+2]=87;
+      }
+      this.panPrintBuffers = { source, orange, blue };
+    }
+    const { source, orange, blue } = this.panPrintBuffers;
+    const ctx = drawingContext, sampleWidth = 448;
+    const sampleX = p.side < 0 ? 0 : 1050-sampleWidth;
+    const dx = ctx.canvas.width/width, dy = ctx.canvas.height/height;
+    const sx = (painting.left+sampleX*painting.scale)*dx, sy = painting.top*dy;
+    const sw = sampleWidth*painting.scale*dx, sh = 1278*painting.scale*dy;
+    if (sx < 0 || sy < 0 || sx+sw > ctx.canvas.width+0.01 ||
+        sy+sh > ctx.canvas.height+0.01) return;
+    // Capture first, before either plate. Background is freshly drawn this frame.
+    source.ctx.clearRect(0,0,224,639);
+    source.ctx.drawImage(ctx.canvas,sx,sy,sw,sh,0,0,224,639);
+    const pixels = source.ctx.getImageData(0,0,224,639).data;
+    // Explicit warm/light and cool/shadow separation, not a multiply tint.
+    // This is a stylised two-ink mapping, not a print-proof CMYK conversion.
+    // Warp the two small coverage plates in their reusable pixel buffers.
+    // A single image draw per plate avoids antialias seams between narrow strips.
+    const plates = [orange,blue];
+    // Separate once; both warps reuse the cached scalar ink coverage.
+    for (let pixel=0,i=0;i<pixels.length;pixel++,i+=4) {
+      const r=pixels[i]/255,g=pixels[i+1]/255,b=pixels[i+2]/255;
+      const light=0.2126*r+0.7152*g+0.0722*b;
+      orange.coverage[pixel]=pixels[i+3]*constrain((r-b)*1.7+(light-0.3)*0.55,0,1);
+      blue.coverage[pixel]=pixels[i+3]*constrain((0.78-light)*1.65+(b-r)*0.65,0,1);
+    }
+    for (let layer=0;layer<2;layer++) {
+      const out = plates[layer].pixels.data;
+      const amount = layer === 0 ? 1 : 0.42;
+      for (let x=0;x<224;x++) {
+        const distance = p.side < 0 ? (x+0.5)*2 : sampleWidth-(x+0.5)*2;
+        const u = constrain(1-distance/p.band,0,1);
+        const falloff = u*u*(3-2*u);
+        const sampleDistance = distance+p.offset*amount*falloff;
+        const sample = constrain((p.side < 0 ? sampleDistance :
+          sampleWidth-sampleDistance)/2-0.5,0,223);
+        const x0 = Math.floor(sample), x1 = Math.min(223,x0+1), mix = sample-x0;
+        for (let y=0;y<639;y++) {
+          const i = (y*224+x)*4;
+          if (falloff === 0) { out[i+3]=0; continue; }
+          const row = y*224, coverage = plates[layer].coverage;
+          out[i+3] = lerp(coverage[row+x0],coverage[row+x1],mix)*falloff;
+        }
+      }
+      plates[layer].ctx.putImageData(plates[layer].pixels,0,0);
+    }
+    push(); ctx.save();
+    try {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = p.alpha;
+      ctx.beginPath();
+      ctx.rect(p.side < 0 ? 0 : 1050-p.band,0,p.band,1278);
+      ctx.clip();
+      ctx.drawImage(orange.canvas,sampleX,0,sampleWidth,1278);
+      ctx.drawImage(blue.canvas,sampleX,0,sampleWidth,1278);
+    } finally { ctx.restore(); pop(); }
+  }
+
+  makeVisualProbe(output) {
+    const node = getAudioContext().createAnalyser();
+    node.fftSize = 1024;
+    node.smoothingTimeConstant = 0;
+    output.connect(node); // Never connect this analyser to the destination.
+    return { node, samples: new Float32Array(node.fftSize) };
+  }
+
+  readVisualProbe(probe) {
+    probe.node.getFloatTimeDomainData(probe.samples);
+    let sum = 0;
+    for (const value of probe.samples) sum += value * value;
+    return Math.sqrt(sum / probe.samples.length);
+  }
+
+  prepareBridgeGeometry() {
+    if (this.bridgeGeometry) return;
+    // Exact polygons from canvas/bridge.js; walkway deliberately excluded.
+    // Same painter order: posts, upper rail, highlight, middle rail, lower rail.
+    const posts = [
+      [[37,589],[51,595],[51,746],[37,724]],
+      [[116,629],[135,636],[135,816],[116,801]],
+      [[238,693],[278,700],[278,939],[238,923]],
+      [[768,944],[842,965],[842,1364],[773,1364]]
+    ];
+    const rails = [
+      [[-186,476],[1193,1096],[1186,1177],[-187,485]],
+      [[-189,465],[1195,1075],[1189,1156],[-190,474]],
+      [[-191,502],[1104,1284],[1087,1364],[-193,511]],
+      [[-237,476],[906,1482],[875,1563],[-241,485]]
+    ];
+    this.bridgeGeometry = posts.concat(rails).map((polygon,index) => {
+      const post = index < posts.length;
+      const path = new Path2D();
+      polygon.forEach((p,i) => i ? path.lineTo(...p) : path.moveTo(...p));
+      path.closePath();
+      // Reorder a post into the same across-surface parametrisation as a rail.
+      const q = post ? [polygon[0],polygon[3],polygon[2],polygon[1]] : polygon;
+      // Reusable boundaries and only nine delayed audio anchors per timber.
+      const points = () => Array.from({ length: 33 }, () => ({ x: 0, y: 0 }));
+      const signals = Array.from({ length: 9 }, () => ({ opera: 0, lowMid: 0, cue: 0 }));
+      return { path, q, post, index, upper: points(), lower: points(), signals };
+    });
+    // Visibility masks remove later rails from earlier posts/rails, preserving depth.
+    this.bridgeGeometry.forEach((surface,i) => {
+      const visible = new Path2D(surface.path);
+      for (let j=i+1;j<this.bridgeGeometry.length;j++) {
+        const outside = new Path2D();
+        outside.rect(-1000,-1000,4000,4000);
+        outside.addPath(this.bridgeGeometry[j].path);
+        if (!surface.exclusions) surface.exclusions = [];
+        surface.exclusions.push(outside);
+      }
+      surface.visible = visible;
+    });
+  }
+
+  onBridgeStateChange(next) {
+    this.bridgeSync = true;
+    this.bridgeCueArmed = true;
+    if (next === "stung" || next === "scare") {
+      this.bridgeAccents = [];
+      this.bridgeHistory = [];
+    } else {
+      for (const accent of this.bridgeAccents) {
+        if (accent.fadeAt === undefined) accent.fadeAt = millis();
+      }
+    }
+  }
+
+  updateBridgeVisuals() {
+    const v = BRIDGE_AUDIO_VISUAL_SETTINGS, now = millis();
+    this.bridgeNow = now;
+    const raw = this.readVisualProbe(this.operaProbe);
+    const cueRaw = this.readVisualProbe(this.cueProbe);
+    // Reuse the existing opera analyser for its mid/low spectrum, once per frame.
+    // No new sound connection or p5 FFT setInput affecting the face analysis.
+    this.operaProbe.node.getFloatFrequencyData(this.bridgeSpectrum);
+    const binHz = getAudioContext().sampleRate/this.operaProbe.node.fftSize;
+    let energy = 0, count = 0;
+    for (let i=Math.max(1,Math.ceil(90/binHz));i<this.bridgeSpectrum.length && i*binHz<=1200;i++) {
+      energy += Math.pow(10,this.bridgeSpectrum[i]/10); count++;
+    }
+    const lowMid = 1-Math.exp(-Math.sqrt(energy/Math.max(1,count))*90);
+    const opera = 1-Math.exp(-Math.max(0,raw-0.0008)*v.operaSensitivity);
+    const e = this.bridgeEnvelope, dt = constrain(deltaTime,0,100);
+    const blocked = !v.enabled || state === "stung" || state === "scare";
+    const sync = this.bridgeSync || deltaTime>250 || blocked;
+    if (sync) {
+      e.opera = opera; e.lowMid = lowMid; e.cue = cueRaw;
+      this.bridgeCueArmed = cueRaw < v.cueThreshold;
+      this.bridgeSync = blocked;
+      this.bridgeHistory = [];
+      if (deltaTime>250 || blocked) this.bridgeAccents = [];
+    } else {
+      e.opera = lerp(e.opera,opera,1-Math.exp(-dt/(opera>e.opera ? 55 : 210)));
+      e.lowMid = lerp(e.lowMid,lowMid,1-Math.exp(-dt/160));
+      e.cue = lerp(e.cue,cueRaw,1-Math.exp(-dt/(cueRaw>e.cue ? 12 : 32)));
+    }
+    this.bridgeHistory.push({ time: now, opera: e.opera, lowMid: e.lowMid });
+    // Ring-sized history, enough for at most 400 ms propagation at 144 fps.
+    while (this.bridgeHistory.length>96 ||
+        (this.bridgeHistory.length>2 && this.bridgeHistory[1].time<now-600)) this.bridgeHistory.shift();
+    this.bridgeAccents = this.bridgeAccents.filter(a =>
+      now-a.born < v.cueTravelDurationMs+v.cueAccentMs &&
+      (a.fadeAt === undefined || now-a.fadeAt<v.exitFadeMs));
+    if (blocked || sync || state !== "distracted") return;
+    if (e.cue < v.cueThreshold*v.cueHysteresis) this.bridgeCueArmed = true;
+    if (this.bridgeCueArmed && e.cue>=v.cueThreshold &&
+        now-this.bridgeLastCue>=v.cueCooldownMs) {
+      this.bridgeAccents.push({ born: now, strength: constrain(e.cue/0.04,0.8,1) });
+      while (this.bridgeAccents.length>constrain(v.maxAccents,1,4)) this.bridgeAccents.shift();
+      this.bridgeLastCue = now;
+      this.bridgeCueArmed = false;
+      this.bridgeCueCount++;
+    }
+  }
+
+  bridgeTextureSignal(x, delayMs = 0) {
+    const v = BRIDGE_AUDIO_VISUAL_SETTINGS, history = this.bridgeHistory;
+    const time = this.bridgeNow-constrain(x/1050,0,1)*constrain(v.propagationMs,0,400)-delayMs;
+    let a = history[0] || this.bridgeEnvelope, b = a;
+    for (const sample of history) {
+      b = sample;
+      if (sample.time>=time) break;
+      a = sample;
+    }
+    const t = constrain((time-a.time)/Math.max(1,b.time-a.time),0,1) || 0;
+    // Fade the ordinary score during distraction; the two accents remain distinct.
+    const opera = lerp(a.opera,b.opera,t)*(state === "distracted" ? 0.35 : 1);
+    const lowMid = lerp(a.lowMid,b.lowMid,t);
+    const target = Math.max(100,screamer.x-screamer.faceWidth*0.7);
+    let cue = 0;
+    if (x>=0 && x<=target) for (const accent of this.bridgeAccents) {
+      const age = this.bridgeNow-accent.born-(x/target)*v.cueTravelDurationMs;
+      if (age<0 || age>v.cueAccentMs) continue;
+      const fade = accent.fadeAt === undefined ? 1 :
+        1-constrain((this.bridgeNow-accent.fadeAt)/Math.max(1,v.exitFadeMs),0,1);
+      cue = Math.max(cue,Math.sin(Math.PI*age/v.cueAccentMs)*accent.strength*fade);
+    }
+    return { opera, lowMid, cue };
+  }
+
+  // Smooth filled ribbons, in each timber's longitudinal/transverse coordinates.
+  drawBridgeGrain(surface,ctx) {
+    const v = BRIDGE_AUDIO_VISUAL_SETTINGS, q = surface.q;
+    const delay = surface.post ? 0 : Math.max(0,surface.index-5)*
+      constrain(v.surfaceDelayMs,0,60);
+    for (let i=0;i<surface.signals.length;i++) {
+      const t = i/(surface.signals.length-1);
+      const x = lerp((q[0][0]+q[3][0])/2,(q[1][0]+q[2][0])/2,t);
+      Object.assign(surface.signals[i],this.bridgeTextureSignal(x,delay));
+    }
+    const phase = surface.post ? surface.index*0.55 : (surface.index-4)*0.45;
+    const cycles = surface.post ? 0.8 : 1.15+(surface.index%2)*0.15;
+    const layers = surface.post ? 1 : 2;
+    for (let layer=0;layer<layers;layer++) {
+      let average = 0;
+      for (let i=0;i<surface.upper.length;i++) {
+        const t = i/(surface.upper.length-1);
+        const position = t*(surface.signals.length-1);
+        const k = Math.min(surface.signals.length-2,Math.floor(position));
+        const fraction = position-k, blend = fraction*fraction*(3-2*fraction);
+        const a = surface.signals[k], b = surface.signals[k+1];
+        const level = constrain(lerp(a.opera,b.opera,blend)+lerp(a.cue,b.cue,blend)*0.9,0,1);
+        const bass = lerp(a.lowMid,b.lowMid,blend);
+        average += level;
+        // Fixed endpoints and phase: deformation breathes inside the timber,
+        // rather than translating a pattern along it.
+        const endIn = constrain(t/0.12,0,1), endOut = constrain((1-t)/0.12,0,1);
+        const anchor = endIn*endIn*(3-2*endIn)*endOut*endOut*(3-2*endOut);
+        const bend = (0.02+constrain(v.bendAmplitude,0,0.2)*
+          (0.85*level+0.15*bass))*anchor;
+        const centre = 0.42+bend*Math.sin(2*Math.PI*cycles*t+phase);
+        const perspective = surface.post ? 1 : 0.72+0.28*t;
+        const strongWidth = constrain(v.mainGrainWidth,0.15,0.35);
+        const mainWidth = (0.15+(strongWidth-0.15)*level*anchor)*
+          (0.9+0.1*Math.sin(Math.PI*t+0.15))*perspective;
+        const width = layer === 0 ? mainWidth : (0.035+0.03*level*anchor)*perspective;
+        const h = layer === 0 ? centre : centre+0.285+
+          0.018*anchor*Math.sin(2*Math.PI*t+phase);
+        const top = h-width/2, bottom = h+width/2;
+        const ax = lerp(q[0][0],q[1][0],t), ay = lerp(q[0][1],q[1][1],t);
+        const bx = lerp(q[3][0],q[2][0],t), by = lerp(q[3][1],q[2][1],t);
+        surface.upper[i].x = lerp(ax,bx,top);
+        surface.upper[i].y = lerp(ay,by,top);
+        surface.lower[i].x = lerp(ax,bx,bottom);
+        surface.lower[i].y = lerp(ay,by,bottom);
+      }
+      ctx.fillStyle = layer === 0 ? "#8C4E3B" : "#F5C55C";
+      ctx.globalAlpha = constrain(v.textureContrast,0,1)*
+        (0.18+0.72*average/surface.upper.length);
+      ctx.beginPath();
+      this.traceBridgeGrainEdge(ctx,surface.upper,false,true);
+      this.traceBridgeGrainEdge(ctx,surface.lower,true,false);
+      ctx.closePath();ctx.fill();
+    }
+  }
+
+  traceBridgeGrainEdge(ctx,points,reverse,first) {
+    const n = points.length;
+    const at = i => points[reverse ? n-1-constrain(i,0,n-1) : constrain(i,0,n-1)];
+    const start = at(0);
+    if (first) ctx.moveTo(start.x,start.y); else ctx.lineTo(start.x,start.y);
+    // Catmull-Rom to cubic Bezier: continuous tangent, no strip seams.
+    for (let i=0;i<n-1;i++) {
+      const a=at(i-1),b=at(i),c=at(i+1),d=at(i+2);
+      ctx.bezierCurveTo(b.x+(c.x-a.x)/6,b.y+(c.y-a.y)/6,
+        c.x-(d.x-b.x)/6,c.y-(d.y-b.y)/6,c.x,c.y);
+    }
+  }
+
+  drawBridgeAudio() {
+    const v = BRIDGE_AUDIO_VISUAL_SETTINGS;
+    if (!v.enabled || !this.started || state === "stung" || state === "scare") return;
+    this.prepareBridgeGeometry();
+    const ctx = drawingContext;
+    push(); ctx.save();
+    try {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.beginPath(); ctx.rect(0,0,1050,1278); ctx.clip();
+      for (const surface of this.bridgeGeometry) {
+        ctx.save();
+        try {
+          ctx.clip(surface.visible);
+          for (const outside of surface.exclusions || []) ctx.clip(outside,"evenodd");
+          this.drawBridgeGrain(surface,ctx);
+        } finally { ctx.restore(); }
+      }
+      if (v.debug) {
+        ctx.globalAlpha=1;ctx.fillStyle="#123157";ctx.fillRect(15,490,530,30);
+        ctx.fillStyle="#FCEEAA";ctx.font="16px monospace";
+        ctx.fillText("opera "+this.bridgeEnvelope.opera.toFixed(3)+" low/mid "+
+          this.bridgeEnvelope.lowMid.toFixed(3)+" cue attacks "+this.bridgeCueCount,24,511);
+      }
+    } finally { ctx.restore(); pop(); }
+  }
 
   resetFaceVisuals() {
     this.visualHistory = [];
@@ -346,7 +750,11 @@ class AudioMixer {
 
   mapVisualLoudness(raw) {
     const v = AUDIO_VISUAL_SETTINGS;
-    const input = Math.max(0, raw - v.noiseGate) * Math.max(0, v.sensitivity);
+    // Preserve the old total-mix mapping during distraction. Isolated scream
+    // RMS at low proximity needs a lower gate and modestly higher visual gain.
+    const gate = state === "distracted" ? 0.0015 : v.noiseGate;
+    const sensitivity = state === "distracted" ? 26 : v.sensitivity;
+    const input = Math.max(0, raw - gate) * Math.max(0, sensitivity);
     return Math.pow(input / (1 + input), Math.max(0.1, v.compressionPower));
   }
 
@@ -359,11 +767,12 @@ class AudioMixer {
     this.visualNow = now;
     this.visualRawLevel = rawLoudness;
     // One FFT, without FFT smoothing. The single envelope below does the smoothing.
-    this.visualSpectrum = this.fft.analyze();
+    const fft = state === "distracted" ? this.fft : this.screamFFT;
+    this.visualSpectrum = fft.analyze();
     this.visualBands = {
-      low: this.fft.getEnergy(45, 250) / 255,
-      mid: this.fft.getEnergy(250, 2000) / 255,
-      high: this.fft.getEnergy(2000, 7000) / 255
+      low: fft.getEnergy(45, 250) / 255,
+      mid: fft.getEnergy(250, 2000) / 255,
+      high: fft.getEnergy(2000, 7000) / 255
     };
     this.visualMappedLevel = this.mapVisualLoudness(rawLoudness);
     if (state === "stung" || state === "scare") {
