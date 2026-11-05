@@ -16,6 +16,7 @@ random passers-by who distract him.
 3. His eyes follow the bee. Don't touch his face while he is watching you, or he jumps at you.
 4. Wait for something to distract him (a boat crash on the lake, a bird or a passer-by). His eyes turn to look at it. You then have a secret 5–10 seconds: click his face and the bee stings him. A pimple grows where you clicked, and he turns around and floats off to a random edge, then comes back.
 5. Click his face at the wrong time and he jumps at you.
+6. Press **Space** to restart. This reloads the page and returns to the start panel; click again to start the sound.
 
 ## How the code is organised
 
@@ -38,27 +39,76 @@ random passers-by who distract him.
 - **Drawing:** We drew the painting in Figma; it was rebuilt exactly as named parts (e.g. `skyUpperRedBand`), each a list of points drawn with `beginShape()`, `vertex()` and `bezierVertex()`. The painting is 1050 × 1278 units; `translate()` and `scale()` fit it to any window size.
 - **Perlin noise + randomness:** `noise(x, y, time)` moves every point of the sky, hills and water up and down, so the whole background waves while the bridge and the screamer stay still. `noise()` also makes the sky and water colours shimmer lighter and darker, and `randomSeed()` / `noiseSeed()` give every visit its own pattern. `random()` picks which event happens and when; in the boat crash, `dist()` detects when two boats hit, and they rock with `rotate()`.
 - **Time-based:** `millis()` times a hidden 5–10 second window after each event, plus how long the sting (pimple, floating away, coming back) and the jump scare last. A simple state machine: watching → distracted → stung or scare → watching.
-- **User input:** `mouseX`/`mouseY`, his face is the hitbox (an oval check), bounded dark pupils follow the bee and enlarge with proximity; during distraction they look at the event, `mousePressed()` for the click, `noCursor()` with our bee drawn in p5 (wings flutter with `sin()` and `rotate()`).
+- **User input:** `InputControls` in `mechanics/input.js` handles the bee cursor, movement-based tilt, pupil tracking and dilation, face hit detection and sting input. It uses the shared painting coordinates and distraction timer. A p5.js `keyPressed()` event handles Space to restart. See the User input section below.
 - **Audio:** two looping tracks with p5.sound. `setVolume()` crossfades opera → screech as you get closer, and `p5.Amplitude().getLevel()` measures the real loudness, which makes the background wave harder. `p5.FFT` splits the sound into 32 frequencies that bend three wavy sound rings around his face.
 
 ## Mechanic ownership
 
-| Mechanic | Owner | What it does |
+| Mechanic | Owner | File |
 | --- | --- | --- |
-| Perlin noise + randomness | [name] | `mechanics/noise.js`: the waving background and its speed, the shimmering colours, the random seed, the random distractions (boat crash, bird, passer-by) and when they happen, the random length of the secret window, the random edge he floats to after a sting, and the jump-scare shake |
-| Time-based | [name] | `mechanics/time.js`: the hidden distraction window, and the timing of the sting (float away, stay gone, come back) and the jump scare |
-| User input | [name] | `mechanics/input.js`: the bee cursor, eye tracking and pupil size, the face hitbox, the sting and pimples, the jump-scare trigger |
-| Audio | [name] | `mechanics/audio.js`: opera/screech crossfade, sting sound, loudness meter (`p5.Amplitude`) and the frequency rings around his face (`p5.FFT`) |
+| Perlin noise + randomness | [name] | `mechanics/noise.js` |
+| Time-based | [name] | `mechanics/time.js` |
+| User input | Yuqian Zhang | `mechanics/input.js` |
+| Audio | [name] | `mechanics/audio.js` |
 
 Drawing: our team's Figma redraw of the painting.
 
+## User input — Yuqian Zhang
+
+The input mechanic lets the user act as a bee and interact with the screamer.
+The active implementation is `mechanics/input.js`; the current page does not load
+the earlier `input-controls.js` implementation.
+
+### Bee cursor and movement
+
+`noCursor()` hides the system cursor on the full-window canvas. The bee is drawn
+with p5.js shapes at `mouseX` and `mouseY`, including animated wings driven by
+`sin()` and `rotate()`. Its position follows the mouse directly, including outside
+the painting within the canvas.
+
+Horizontal movement is calculated by subtracting the previous frame's mouse X
+position from the current one. `map()` and `constrain()` convert this movement
+into a tilt of up to 30 degrees left or right. `lerp()` makes the bee lean quickly
+while moving and return upright more slowly when horizontal movement stops.
+Only the angle is smoothed; the cursor position has no added easing. Rotation
+uses the existing mouse hotspot so it stays aligned with the interaction point.
+
+### Eyes and distance
+
+`drawTrackingEye()` draws pale 20 × 45 eye shapes with dark blue pupils and small
+white highlights, keeping the original eye centres and head position. The pupils
+follow the bee and grow as its distance from the face decreases. Their movement
+range decreases as they grow, keeping them inside the eyes. During distraction,
+they become small and look towards the random event instead.
+
+`script.js` converts screen coordinates into the painting's 1050 × 1278 coordinate
+system through `fitPainting()`. Input uses this shared `mouseInPainting` position
+for distance and hit detection. `controls.distance` stores the distance to the face
+centre for both the audio and noise mechanics; no separate SVG coordinate
+conversion is used in this version.
+
+### Clicks, state and restart
+
+`isOnFace()` checks an elliptical face region. Background clicks do not count as
+stings. After the first click starts audio, `script.js` forwards clicks to
+`controls.clicked()`. A face click succeeds only when the state is `distracted`
+and `timer.isOpen()` is true. A face click while `watching` triggers `scare`;
+touching the face while watching also triggers it once audio has started.
+
+`sting()` records the sting position and timestamp, requests a random departure
+edge from the noise module, plays the sting sound and changes the state to
+`stung`. The figure's pimple drawing and departure animation remain in
+`canvas/screamer.js`, while `mechanics/time.js` manages the distraction window
+and state durations. Input does not create another distraction timer.
+
+Pressing **Space** invokes the p5.js `keyPressed()` callback and uses the browser's
+`window.location.reload()` API to restart the entire experience. `return false`
+prevents the default Space-key scrolling behaviour. Audio must be started again
+with a click after the reload.
+
 ## AI acknowledgement
 
-- Yuqian Zhang (Dawn)'s eye design uses pale 20 × 45 eye shapes, dark tracking pupils and white highlights. ChatGPT assisted with its implementation and integration into `mechanics/input.js`, called by `canvas/screamer.js`, reusing the shared painting coordinates, distance and distraction state. Visual sizes were refined based on Dawn's feedback.
-
-- Our Figma drawing was converted into p5.js shape code with help from AI.
-- Claude (Anthropic) helped write, organise and comment the code in this repository: the mechanic classes, the screamer and jump scare, the window fitting, and the audio mixing. Each file says this in a comment at the top. We tested the code and can explain how each part works (see the comments).
-- The bee design (bee.svg) was made with help from ChatGPT; we redrew it in p5.js.
+Claude (Anthropic) and ChatGPT (OpenAI) assisted with translating the team's Figma drawing into p5.js, developing and integrating code, explaining implementation choices, refining interactions, and writing comments and documentation. The team directed the design decisions and selected and adjusted the implementations. Specific AI-assisted contributions are acknowledged in the relevant code comments.
 
 ## External references
 
