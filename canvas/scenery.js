@@ -4,7 +4,7 @@
 // Every shape is a list of points. Two numbers = a straight corner, six numbers = a curve.
 // All numbers are in "painting units": the painting is 1050 wide and 1278 tall
 // (script.js shrinks or grows it to fit the window).
-// Parts drawn with drawWavyPart() slowly wave, using the noise in mechanics/noise.js.
+// Background outlines use the time mechanic sine wave; noise.js keeps colour variation.
 // AI acknowledgement: this file was organised and commented with help from Claude (AI). See README.md.
 
 
@@ -113,7 +113,7 @@ function drawMountains() {
 // ===== LAKE, REFLECTIONS AND TWO SMALL BOATS =====
 
 function drawLake() {
-  drawStillPart("lakeBlueBand", "#2D609E", [
+  drawHoverPart("lakeBlueBand", "#2D609E", [
     [-314, 517],
     [105, 517, 523, 514, 874, 514],
     [898, 514, 916, 518, 916, 524],
@@ -125,7 +125,7 @@ function drawLake() {
     [-314, 557]
   ]);
 
-  drawStillPart("lakeGoldReflection", "#FFD677", [
+  drawHoverPart("lakeGoldReflection", "#FFD677", [
     [-289, 522],
     [88, 522, 465, 519, 782, 519],
     [803, 519, 820, 523, 820, 528],
@@ -137,7 +137,7 @@ function drawLake() {
     [-289, 558]
   ]);
 
-  drawStillPart("lakeLightReflection", "#FCEEAA", [
+  drawHoverPart("lakeLightReflection", "#FCEEAA", [
     [-464, 520],
     [-136, 520, 192, 519, 467, 519],
     [485, 519, 500, 521, 500, 523],
@@ -223,6 +223,14 @@ function drawStillPart(id, colour, points) {
 }
 
 
+// The lake stays still until the bee distorts it.
+function drawHoverPart(id, colour, points) {
+  fill(colour);
+  noStroke();
+  timer.drawBackgroundPath(points, true, false);
+}
+
+
 // ----- draws a part whose edges wave up and down (the sky, hills and water) -----
 function drawWavyPart(id, colour, points) {
   // shimmer() (in mechanics/noise.js) makes the colour slowly lighter and darker
@@ -234,38 +242,22 @@ function drawWavyPart(id, colour, points) {
 
 // ----- joins a list of points into one shape -----
 // two numbers = a corner, six numbers = a curve
-// wavy = true moves every point up and down a little with noise
+// wavy = true uses the shared sine wave and optional local hover dent
 function drawPath(points, closed, wavy) {
-  // The time mechanic bends the sampled background; noise stays in noise.js.
+  // The time mechanic owns the background outline movement.
   if (wavy) {
     timer.drawBackgroundPath(points, closed);
     return;
   }
 
   beginShape();
-
   for (let point of points) {
-    // copy the numbers, moving them if the part is wavy (they come in pairs: x then y)
-    let moved = [];
-    for (let i = 0; i < point.length; i += 2) {
-      let x = point[i];
-      let y = point[i + 1];
-      if (wavy) {
-        y = y + noiseLayer.wobbleAt(x, y);
-      }
-      moved.push(x, y);
-    }
-
-    if (moved.length === 2) {
-      vertex(moved[0], moved[1]);
+    if (point.length === 2) {
+      vertex(point[0], point[1]);
     } else {
-      bezierVertex(moved[0], moved[1], moved[2], moved[3], moved[4], moved[5]);
+      bezierVertex(point[0], point[1], point[2], point[3], point[4], point[5]);
     }
   }
-
-  if (closed) {
-    endShape(CLOSE);
-  } else {
-    endShape();
-  }
+  if (closed) endShape(CLOSE);
+  else endShape();
 }

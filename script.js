@@ -62,7 +62,8 @@ function draw() {
   audio.update();
 
   // 3. a random event distracts him, which opens the secret window
-  if (noiseLayer.eventStarted() && state === "watching") {
+  // Let the timed look/shake finish before another distraction takes over.
+  if (noiseLayer.eventStarted() && state === "watching" && !timer.noticed) {
     changeState("distracted");
     timer.start();
   }

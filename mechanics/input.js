@@ -6,7 +6,8 @@
 // AI acknowledgement: the original shared input class was written with help
 // from Claude (AI). ChatGPT assisted with integrating Dawn's eye tracking,
 // distance-based pupil size, highlights and 20 x 45 eye scaling. See README.md.
-// ChatGPT also helped combine this eye method with Qiaoyi's timed attention.
+// ChatGPT also helped combine this eye method with Qiaoyi's timed attention,
+// and keep the face hitbox aligned while the time mechanic pulls the figure.
 
 
 class InputControls {
@@ -24,7 +25,8 @@ class InputControls {
   // ----- runs every frame -----
   update() {
     // dist() measures how far the bee is from the middle of his face (audio.js uses this)
-    this.distance = dist(mouseInPainting.x, mouseInPainting.y, screamer.x, screamer.y);
+    let point = timer.figurePoint(mouseInPainting.x, mouseInPainting.y);
+    this.distance = dist(point[0], point[1], screamer.x, screamer.y);
 
     // the bee touches his face while he is watching you: jump scare!
     // (only after the sound has started, so the first click doesn't scare you)
@@ -38,8 +40,9 @@ class InputControls {
   isOnFace() {
     // his face is roughly an oval, so we check if the bee is inside that oval
     // (each part is 1 at the edge of the oval, so adding them up gives less than 1 inside it)
-    let across = (mouseInPainting.x - screamer.x) / (screamer.faceWidth / 2);
-    let down = (mouseInPainting.y - screamer.y) / (screamer.faceHeight / 2);
+    let point = timer.figurePoint(mouseInPainting.x, mouseInPainting.y);
+    let across = (point[0] - screamer.x) / (screamer.faceWidth / 2);
+    let down = (point[1] - screamer.y) / (screamer.faceHeight / 2);
     return across * across + down * down < 1;
   }
 
@@ -104,15 +107,17 @@ class InputControls {
   // Implemented with ChatGPT assistance: tracking, pupil size and eye rendering.
   drawTrackingEye(eyeX, eyeY) {
     // Use the shared painting coordinates; no SVG or separate input module needed.
-    let targetX = mouseInPainting.x;
-    let targetY = mouseInPainting.y;
+    let point = timer.figurePoint(mouseInPainting.x, mouseInPainting.y);
+    let targetX = point[0];
+    let targetY = point[1];
     let pupilNearness = constrain(map(this.distance, 40, 350, 1, 0), 0, 1);
 
     // Qiaoyi's time mechanic controls when a hovered background is noticed.
     // Keep Dawn's pupil design and proximity sizing in this input class.
     if (state === "watching" && (timer.isHovering() || timer.attention > 0)) {
-      targetX = lerp(eyeX, timer.dentX, timer.attention);
-      targetY = lerp(eyeY, timer.dentY, timer.attention);
+      let dent = timer.figurePoint(timer.dentX, timer.dentY);
+      targetX = lerp(eyeX, dent[0], timer.attention);
+      targetY = lerp(eyeY, dent[1], timer.attention);
     }
 
     // Random distractions keep their existing priority.
