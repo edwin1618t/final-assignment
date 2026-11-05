@@ -3,7 +3,9 @@
 // If the bee gets too close to his face while he is watching you, you get a jump scare.
 // His face is the hitbox. Click his face while he is distracted and the bee stings him:
 // a pimple grows and he floats away. Click at the wrong time and you get a jump scare.
-// AI acknowledgement: this file was written with help from Claude (AI). See README.md.
+// AI acknowledgement: the original shared input class was written with help
+// from Claude (AI). ChatGPT assisted with integrating Dawn's eye tracking,
+// distance-based pupil size, highlights and 20 x 45 eye scaling. See README.md.
 
 
 class InputControls {
@@ -93,6 +95,61 @@ class InputControls {
     bezierVertex(side * 5, -2, side * 13, 5, side * 11, 12);
     bezierVertex(side * 10, 17, side * 3, 13, 0, 4);
     endShape(CLOSE);
+    pop();
+  }
+
+
+  // Draw one enlarged eye while keeping its centre and the face fixed.
+  // Implemented with ChatGPT assistance: tracking, pupil size and eye rendering.
+  drawTrackingEye(eyeX, eyeY) {
+    // Use the shared painting coordinates; no SVG or separate input module needed.
+    let targetX = mouseInPainting.x;
+    let targetY = mouseInPainting.y;
+    let pupilNearness = constrain(map(this.distance, 40, 350, 1, 0), 0, 1);
+
+    // Keep the team's distraction behaviour: look at the event with small pupils.
+    if (state === "distracted") {
+      targetX = noiseLayer.event.x;
+      targetY = noiseLayer.event.y;
+      pupilNearness = 0;
+    }
+
+    let offsetX = 0;
+    let offsetY = 0;
+
+    let dx = targetX - eyeX;
+    let dy = targetY - eyeY;
+    let eyeDistance = Math.sqrt(dx * dx + dy * dy);
+
+    if (eyeDistance > 0) {
+      // Divide by distance to get direction; limit travel inside the eye.
+      // Reduce movement near the eye centre instead of jumping across it.
+      let strength = constrain(eyeDistance / 80, 0, 1);
+      // Larger pupils have less room to move inside the same eye outline.
+      let travelX = map(pupilNearness, 0, 1, 1.5, 1);
+      let travelY = map(pupilNearness, 0, 1, 5, 3);
+      offsetX = dx / eyeDistance * travelX * strength;
+      offsetY = dy / eyeDistance * travelY * strength;
+    }
+
+    let pupilWidth = map(pupilNearness, 0, 1, 4, 10);
+    let pupilHeight = map(pupilNearness, 0, 1, 10, 24);
+
+    push();
+    // Move the drawing origin to this eye's centre, then enlarge all eye parts.
+    // The original 14 x 33 outline becomes 20 x 45.
+    translate(eyeX, eyeY);
+    scale(20 / 14, 45 / 33);
+    noStroke();
+    fill("#FFF0C9");
+    ellipse(0, 0, 14, 33);
+
+    fill("#0B2D4E");
+    ellipse(offsetX, offsetY, pupilWidth, pupilHeight);
+
+    // A small highlight travels with the pupil.
+    fill("#FFFFFF");
+    ellipse(offsetX - 0.6, offsetY - 2, 1.6, 2.5);
     pop();
   }
 

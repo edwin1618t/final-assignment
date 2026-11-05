@@ -47,14 +47,14 @@ random passers-by who distract him.
 | --- | --- | --- |
 | Perlin noise + randomness | [name] | `mechanics/noise.js`: the waving background and its speed, the shimmering colours, the random seed, the random distractions (boat crash, bird, passer-by) and when they happen, the random length of the secret window, the random edge he floats to after a sting, and the jump-scare shake |
 | Time-based | [name] | `mechanics/time.js`: the hidden distraction window, and the timing of the sting (float away, stay gone, come back) and the jump scare |
-| User input | [name] | `mechanics/input.js`: the bee cursor, the face hitbox, the sting and pimples, the jump-scare trigger |
+| User input | [name] | `mechanics/input.js`: the bee cursor, eye tracking and pupil size, the face hitbox, the sting and pimples, the jump-scare trigger |
 | Audio | [name] | `mechanics/audio.js`: opera/screech crossfade, sting sound, loudness meter (`p5.Amplitude`) and the frequency rings around his face (`p5.FFT`) |
 
 Drawing: our team's Figma redraw of the painting.
 
 ## AI acknowledgement
 
-- Yuqian Zhang (Dawn)'s eye design uses pale 20 × 45 eye shapes, dark tracking pupils and white highlights. ChatGPT assisted with its implementation and migration into `canvas/screamer.js`, reusing the shared painting coordinates, distance and distraction state. Visual sizes were refined based on Dawn's feedback.
+- Yuqian Zhang (Dawn)'s eye design uses pale 20 × 45 eye shapes, dark tracking pupils and white highlights. ChatGPT assisted with its implementation and integration into `mechanics/input.js`, called by `canvas/screamer.js`, reusing the shared painting coordinates, distance and distraction state. Visual sizes were refined based on Dawn's feedback.
 
 - Our Figma drawing was converted into p5.js shape code with help from AI.
 - Claude (Anthropic) helped write, organise and comment the code in this repository: the mechanic classes, the screamer and jump scare, the window fitting, and the audio mixing. Each file says this in a comment at the top. We tested the code and can explain how each part works (see the comments).
