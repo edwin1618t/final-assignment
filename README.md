@@ -29,8 +29,18 @@ what sits in front of what.
 
 
 ## Time-based mechanic (Qiaoyi Xin)
+I used frameCount and sin() to make the sky, hills and right
+shoreline move slowly. The lake, blue contour lines, bridge
+and figure stay still.
+
+The wave height is set to 8 to keep the movement subtle.
+One cycle takes 240 frames, or about 8 seconds at 30 FPS.
+The input mechanic can change waveHeight later.
 
 
+References:
+https://p5js.org/reference/p5/frameCount/
+https://p5js.org/reference/p5/sin/
 ## Audio mechanic ()
 
 
