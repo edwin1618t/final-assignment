@@ -6,6 +6,7 @@
 // AI acknowledgement: the original shared input class was written with help
 // from Claude (AI). ChatGPT assisted with integrating Dawn's eye tracking,
 // distance-based pupil size, highlights and 20 x 45 eye scaling. See README.md.
+// ChatGPT also assisted with movement-based bee tilt and its gradual return.
 
 
 class InputControls {
@@ -17,11 +18,29 @@ class InputControls {
 
     // how far the cursor is from the screamer's face (in painting units)
     this.distance = 1000;
+
+    // Screen pixels: compare consecutive frames to measure horizontal movement.
+    this.previousMouseX = mouseX;
+    this.beeTilt = 0;
   }
 
 
   // ----- runs every frame -----
   update() {
+    let movementX = mouseX - this.previousMouseX;
+    this.previousMouseX = mouseX;
+
+    // Default angle units are radians: PI / 6 equals 30 degrees.
+    // Reach maximum tilt at 4 screen pixels of horizontal movement per frame.
+    let targetTilt = constrain(map(movementX, -4, 4, -PI / 6, PI / 6), -PI / 6, PI / 6);
+    // Lean quickly while moving, but return upright more slowly when stopped.
+    // Only the angle is smoothed; the bee's position still follows directly.
+    let tiltResponse = 0.6;
+    if (movementX === 0) {
+      tiltResponse = 0.06;
+    }
+    this.beeTilt = lerp(this.beeTilt, targetTilt, tiltResponse);
+
     // dist() measures how far the bee is from the middle of his face (audio.js uses this)
     this.distance = dist(mouseInPainting.x, mouseInPainting.y, screamer.x, screamer.y);
 
@@ -46,8 +65,11 @@ class InputControls {
   // ----- draws our bee where the mouse is (in normal screen pixels) -----
   draw() {
     push();
-    // the bee's head is at the tip of the mouse
-    translate(mouseX - 16, mouseY - 8);
+    // Rotate around the existing mouse hotspot, keeping it aligned while tilting.
+    // Position follows the mouse directly; only the angle uses lerp().
+    translate(mouseX, mouseY);
+    rotate(this.beeTilt);
+    translate(-16, -8);
 
     // antennae
     stroke("#172132");
