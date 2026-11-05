@@ -29,12 +29,14 @@ let audio;
 
 // ----- load the sounds before the sketch starts -----
 function preload() {
-  // Load all five tracks before starting the sketch.
+  // Load all tracks before starting the sketch.
   operaSound = loadSound("assets/sounds/CW_Opera.wav");
   screechSound = loadSound("assets/sounds/CW_Screaming.wav");
   stingSound = loadSound("assets/sounds/CW_bit.wav");
   beeSound = loadSound("assets/sounds/CW_Bee.wav");
   jumpscareSound = loadSound("assets/sounds/CW_Jumpscare(2).wav");
+  distractionSound = loadSound("assets/sounds/CW_Distrace.wav");
+  subSound = loadSound("assets/sounds/CW_Sub.wav");
 }
 
 

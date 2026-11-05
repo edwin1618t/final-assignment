@@ -15,15 +15,30 @@ let screechSound;
 let stingSound;
 let beeSound;
 let jumpscareSound;
+let distractionSound;
+let subSound;
 
 // Adjust starting volumes here (0 = silent, 1 = full volume).
 const AUDIO_SETTINGS = {
   operaVolume: 0.5,
   operaMinVolume: 0.3,
-  screechVolume: 0.5,
+  screechVolume: 0.7,
   stingVolume: 0.3,
-  beeVolume: 0.10,
+  beeVolume: 0.03,
   jumpscareVolume: 0.35,
+  distractionVolume: 0.7,
+  subVolume: 0.5,
+  subFadeInSeconds: 2.5,
+  subFadeOutSeconds: 3.5,
+  subOperaMultiplier: 0.75,
+  subBeeVolume: 0.12,
+  beePitchSemitones: 1.5,
+  beePitchChangeMinMs: 70,
+  beePitchChangeMaxMs: 140,
+  beePitchSmoothSeconds: 0.045,
+  distractedScreechMultiplier: 0.05,
+  distractionFadeOutSeconds: 0.8,
+  distractionRecoverSeconds: 0.5,
   scareScreechMultiplier: 0.15,
   jumpscareFadeSeconds: 0.06,
   beePanSeconds: 0.1
@@ -37,9 +52,28 @@ class AudioMixer {
     // browsers only allow sound after the first click, so it starts switched off
     this.started = false;
     this.beePan = 0;
+    this.beePitch = 0;
+    this.beePitchTarget = 0;
+    this.nextBeePitchTime = 0;
+    this.subMix = 0;
+    this.subTransition = { from: 0, target: 0, start: 0, duration: 1 };
 
     // how loud it is right now: 0 = quiet, 1 = as loud as possible
     this.level = 0;
+
+    // A separate gain fades the scream once per transition, not once per frame.
+    this.screechGain = new p5.Gain();
+    this.screechGain.connect();
+    this.screechGain.amp(1);
+    screechSound.disconnect();
+    screechSound.connect(this.screechGain);
+
+    // Opera keeps its original tone; this gain only lowers its volume during Sub.
+    this.operaGain = new p5.Gain();
+    this.operaGain.connect();
+    this.operaGain.amp(1);
+    operaSound.disconnect();
+    operaSound.connect(this.operaGain);
 
     // p5.Amplitude listens to everything that is playing and measures how loud it is
     this.meter = new p5.Amplitude();
@@ -68,6 +102,10 @@ class AudioMixer {
     screechSound.loop();
     beeSound.loop();
     this.started = true;
+    // Distraction may already be active when the first click unlocks audio.
+    if (state === "distracted") {
+      this.startDistractionSound();
+    }
   }
 
 
@@ -81,10 +119,57 @@ class AudioMixer {
   }
 
 
-  // Trigger once on entry, even if scare ends and restarts in the same frame.
+  // Restart once per distraction, never once per draw frame.
+  startDistractionSound() {
+    distractionSound.stop();
+    distractionSound.setVolume(0);
+    distractionSound.loop();
+    distractionSound.setVolume(AUDIO_SETTINGS.distractionVolume, 0.1);
+    subSound.stop();
+    subSound.setVolume(0);
+    subSound.loop();
+    subSound.setVolume(AUDIO_SETTINGS.subVolume, AUDIO_SETTINGS.subFadeInSeconds);
+    this.setDistractionMix(true);
+  }
+
+
+  // Gently lower opera during Sub, then recover with the Sub tail.
+  setDistractionMix(active) {
+    this.screechGain.amp(active ? AUDIO_SETTINGS.distractedScreechMultiplier : 1,
+      active ? AUDIO_SETTINGS.distractionFadeOutSeconds : AUDIO_SETTINGS.distractionRecoverSeconds);
+    const duration = active ? AUDIO_SETTINGS.subFadeInSeconds : AUDIO_SETTINGS.subFadeOutSeconds;
+    this.operaGain.amp(active ? AUDIO_SETTINGS.subOperaMultiplier : 1, duration);
+    this.updateSubMix();
+    this.subTransition = { from: this.subMix, target: active ? 1 : 0,
+      start: millis(), duration: duration * 1000 };
+  }
+
+
+  // Keep bee changes gradual, including when distraction ends during the fade-in.
+  updateSubMix() {
+    const transition = this.subTransition;
+    const t = constrain((millis() - transition.start) / transition.duration, 0, 1);
+    const smooth = t * t * (3 - 2 * t);
+    this.subMix = lerp(transition.from, transition.target, smooth);
+  }
+
+
+  // Trigger once on entry, even if a state ends and restarts in the same frame.
   onStateChange(previousState, newState) {
     if (!this.started || previousState === newState) {
       return;
+    }
+    if (previousState === "distracted") {
+      // End the loop after a short fade, on timeout or a successful sting.
+      distractionSound.setVolume(0, 0.1);
+      distractionSound.stop(0.1);
+      // Let Sub fade away while opera slowly returns to its normal level.
+      subSound.setVolume(0, AUDIO_SETTINGS.subFadeOutSeconds);
+      subSound.stop(AUDIO_SETTINGS.subFadeOutSeconds);
+      this.setDistractionMix(false);
+    }
+    if (newState === "distracted") {
+      this.startDistractionSound();
     }
     if (newState === "scare") {
       jumpscareSound.stop();
@@ -114,8 +199,22 @@ class AudioMixer {
     const panBlend = 1 - Math.exp(-deltaTime / (AUDIO_SETTINGS.beePanSeconds * 1000));
     this.beePan = constrain(lerp(this.beePan, targetPan, panBlend), -1, 1);
     beeSound.pan(this.beePan);
-    // Fade out beyond the visible frame and restore on re-entry without restarting.
-    beeSound.setVolume(this.isBeeInsideFrame() ? AUDIO_SETTINGS.beeVolume : 0, 0.1);
+    this.updateSubMix();
+    const beeVolume = lerp(AUDIO_SETTINGS.beeVolume, AUDIO_SETTINGS.subBeeVolume, this.subMix);
+    // The boosted bee still becomes silent outside the frame.
+    beeSound.setVolume(this.isBeeInsideFrame() ? beeVolume : 0, 0.1);
+
+    // Small random pitch targets, smoothed into a continuous flutter during Sub.
+    if (this.subMix > 0 && millis() >= this.nextBeePitchTime) {
+      this.beePitchTarget = random(-AUDIO_SETTINGS.beePitchSemitones, AUDIO_SETTINGS.beePitchSemitones);
+      this.nextBeePitchTime = millis() + random(AUDIO_SETTINGS.beePitchChangeMinMs,
+        AUDIO_SETTINGS.beePitchChangeMaxMs);
+    } else if (this.subMix === 0) {
+      this.beePitchTarget = 0;
+    }
+    const pitchBlend = 1 - Math.exp(-deltaTime / (AUDIO_SETTINGS.beePitchSmoothSeconds * 1000));
+    this.beePitch = lerp(this.beePitch, this.beePitchTarget, pitchBlend);
+    beeSound.rate(Math.pow(2, this.beePitch * this.subMix / 12));
 
     // how close the bee is: 1 = right next to him, 0 = far away
     // map() turns the distance into a number from 1 to 0
@@ -130,6 +229,7 @@ class AudioMixer {
 
     let operaVolume = 1 - closeness;
     let screechVolume = closeness;
+    // Distraction ducking uses screechGain so the longer fade is not reset each frame.
     if (state === "scare") {
       screechVolume *= AUDIO_SETTINGS.scareScreechMultiplier;
     }
