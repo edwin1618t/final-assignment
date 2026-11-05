@@ -84,6 +84,8 @@ function draw() {
   noiseLayer.drawPasserby();
   audio.drawFaceDistortion();
   drawScreamer();
+  // Face-edge feedback uses the same painting coordinates, above the character.
+  audio.drawDistractionHighlight();
 
   pop();
 
