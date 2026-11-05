@@ -206,3 +206,17 @@ class InputControls {
     changeState("stung");
   }
 }
+
+
+// ----- press Space to restart the whole experience -----
+// ChatGPT assisted with connecting the p5.js keyboard event to a page restart.
+function keyPressed() {
+  if (key === " ") {
+    // Browser API: reload to reset all mechanics and stop the current audio.
+    // The start message returns; click again to begin with sound.
+    window.location.reload();
+
+    // In a p5.js event, returning false prevents Space from scrolling the page.
+    return false;
+  }
+}

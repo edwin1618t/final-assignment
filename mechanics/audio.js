@@ -125,16 +125,44 @@ class AudioMixer {
 
 
   // ----- the message you see before the sound starts -----
+  // ChatGPT assisted with the start panel layout and keyboard hint.
   drawStartMessage() {
     if (this.started) {
       return;
     }
+    push();
+    // Draw in screen coordinates; shrink the panel to fit smaller windows.
+    let panelScale = constrain(min((width - 32) / 440, (height - 32) / 210), 0.1, 1);
+    translate(width / 2, height / 2);
+    scale(panelScale);
+    rectMode(CORNER);
+
+    // A subtle shadow and warm border echo the artwork's frame.
     noStroke();
-    fill(0, 150);
-    rect(0, height / 2 - 40, width, 80);
-    fill(255, 240, 200);
+    fill(0, 70);
+    rect(-214, -99, 440, 210, 12);
+    fill(8, 26, 48, 240);
+    stroke(255, 214, 119, 120);
+    strokeWeight(1);
+    rect(-220, -105, 440, 210, 12);
+
+    noStroke();
     textAlign(CENTER, CENTER);
+    textFont("sans-serif");
+    fill("#FFD677");
     textSize(24);
-    text("Click anywhere to start (turn your sound on)", width / 2, height / 2);
+    text("Click anywhere to begin", 0, -52);
+
+    fill("#FFF0C9");
+    textSize(15);
+    text("Please turn on your sound.", 0, -13);
+
+    stroke(255, 214, 119, 65);
+    line(-160, 22, 160, 22);
+    noStroke();
+    fill(255, 240, 200, 200);
+    textSize(14);
+    text("Press Space to restart", 0, 59);
+    pop();
   }
 }
