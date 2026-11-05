@@ -5,9 +5,9 @@
 // drawJumpScare() shows his face huge when you get too close.
 // AI acknowledgement: our Figma drawing was turned into p5.js code with help from AI,
 // and this file was organised with help from Claude (AI). See README.md.
-// ChatGPT assisted with migrating Dawn's eye design, bounded pupil tracking,
-// distance-based pupil size and 20 x 45 eye scaling into this shared version.
-// ChatGPT also helped connect Qiaoyi's timed background attention and reaction.
+// ChatGPT assisted with connecting Dawn's eye design to InputControls.
+// Eye tracking, size changes and rendering are in mechanics/input.js.
+// ChatGPT also helped connect Qiaoyi's frame-based attention and figure reaction.
 
 
 function drawScreamer() {
@@ -17,7 +17,7 @@ function drawScreamer() {
   // push() and pop() keep the moving and flipping just for him
   push();
   translate(runAway.x, runAway.y);
-  // The timer adds a small reaction only while he is watching.
+  // The time mechanic adds a small reaction after the hover wait.
   timer.applyFigureReaction();
 
   // flip him so he looks the other way: scale(-1, 1) mirrors left and right
@@ -79,8 +79,8 @@ function drawScreamer() {
   fill("#0B2D4E");
 
   // Dawn's eyes use the shared mouse, distance and distraction state.
-  drawTrackingEye(441, 721);
-  drawTrackingEye(508, 715);
+  controls.drawTrackingEye(441, 721);
+  controls.drawTrackingEye(508, 715);
 
   // figureMouth
   ellipse(481, 808, 34, 81);
@@ -109,67 +109,6 @@ function drawScreamer() {
   // the pimples where the bee stung him
   drawPimples();
 
-  pop();
-}
-
-
-// Draw one enlarged eye while keeping its centre and the face fixed.
-// Implemented with ChatGPT assistance: tracking, pupil size and eye rendering.
-function drawTrackingEye(eyeX, eyeY) {
-  // Use the shared painting coordinates; no SVG or separate input module needed.
-  let targetX = mouseInPainting.x;
-  let targetY = mouseInPainting.y;
-  let pupilNearness = constrain(map(controls.distance, 40, 350, 1, 0), 0, 1);
-
-  // Keep Dawn's eye design. Only notice a hovered background after 90 frames.
-  if (state === "watching" && (timer.isHovering() || timer.attention > 0)) {
-    targetX = lerp(eyeX, timer.dentX, timer.attention);
-    targetY = lerp(eyeY, timer.dentY, timer.attention);
-  }
-
-  // Random distractions still take priority over the background hover.
-  if (state === "distracted") {
-    targetX = noiseLayer.event.x;
-    targetY = noiseLayer.event.y;
-    pupilNearness = 0;
-  }
-
-  let offsetX = 0;
-  let offsetY = 0;
-
-  let dx = targetX - eyeX;
-  let dy = targetY - eyeY;
-  let eyeDistance = Math.sqrt(dx * dx + dy * dy);
-
-  if (eyeDistance > 0) {
-    // Divide by distance to get direction; limit travel inside the eye.
-    // Reduce movement near the eye centre instead of jumping across it.
-    let strength = constrain(eyeDistance / 80, 0, 1);
-    // Larger pupils have less room to move inside the same eye outline.
-    let travelX = map(pupilNearness, 0, 1, 1.5, 1);
-    let travelY = map(pupilNearness, 0, 1, 5, 3);
-    offsetX = dx / eyeDistance * travelX * strength;
-    offsetY = dy / eyeDistance * travelY * strength;
-  }
-
-  let pupilWidth = map(pupilNearness, 0, 1, 4, 10);
-  let pupilHeight = map(pupilNearness, 0, 1, 10, 24);
-
-  push();
-  // Move the drawing origin to this eye's centre, then enlarge all eye parts.
-  // The original 14 x 33 outline becomes 20 x 45.
-  translate(eyeX, eyeY);
-  scale(20 / 14, 45 / 33);
-  noStroke();
-  fill("#FFF0C9");
-  ellipse(0, 0, 14, 33);
-
-  fill("#0B2D4E");
-  ellipse(offsetX, offsetY, pupilWidth, pupilHeight);
-
-  // A small highlight travels with the pupil.
-  fill("#FFFFFF");
-  ellipse(offsetX - 0.6, offsetY - 2, 1.6, 2.5);
   pop();
 }
 
