@@ -3,19 +3,30 @@
 function setup() {
   let picture = createCanvas(1050, 1278, SVG);
   picture.parent("artwork");
-  noLoop();
+  frameRate(30);
 }
 
 function draw() {
-  // Clear old SVG elements before drawing again.
-  // This prevents hidden elements from accumulating during later animation.
+  // Remove the previous SVG frame before drawing the next one.
   clear();
   background("#102C51");
+  updateTimeBased();
+
+  // Apply the time-based wave to the background outlines.
+  waveEnabled = true;
   drawSky();
   drawMountains();
+
+  // Keep the blue contours, lake, reflections and boats still.
+  waveEnabled = false;
   drawBlueLines();
   drawLake();
+
+  waveEnabled = true;
   drawRightLake();
+
+  // Keep the bridge and figure stable.
+  waveEnabled = false;
   drawBridge();
   drawFigure();
 }
@@ -447,17 +458,19 @@ function drawShape(colour, points) {
   drawPath(points, true);
 }
 
+// ChatGPT assisted with connecting the time-based wave to these outlines.
 function drawPath(points, closed) {
   beginShape();
 
   for (let point of points) {
     if (point.length === 2) {
-      vertex(point[0], point[1]);
+      vertex(point[0], waveY(point[0], point[1]));
     } else {
+      // Apply the same wave to both control points and the end point.
       bezierVertex(
-        point[0], point[1],
-        point[2], point[3],
-        point[4], point[5]
+        point[0], waveY(point[0], point[1]),
+        point[2], waveY(point[2], point[3]),
+        point[4], waveY(point[4], point[5])
       );
     }
   }
