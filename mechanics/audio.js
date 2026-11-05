@@ -1,7 +1,7 @@
 // ===== MECHANIC 4: AUDIO =====
 // Two sound tracks play at the same time: an opera voice and a horrible screech.
 // When the bee is far from the screamer you hear the opera.
-// As it gets closer to his face, the opera fades out and the screech gets louder.
+// As it gets closer to his face, the opera gets quieter and the screech gets louder.
 // p5.Amplitude measures how loud the sound really is, and that loudness drives the visuals:
 // the sky and water wave harder, and wavy sound lines around his face
 // change shape with the frequencies of the sound (p5.FFT).
@@ -9,10 +9,25 @@
 // AI acknowledgement: this file was written with help from Claude (AI). See README.md.
 
 
-// ----- the two sound tracks (loaded in preload() in script.js) -----
+// ----- sound tracks (loaded in preload() in script.js) -----
 let operaSound;
 let screechSound;
 let stingSound;
+let beeSound;
+let jumpscareSound;
+
+// Adjust starting volumes here (0 = silent, 1 = full volume).
+const AUDIO_SETTINGS = {
+  operaVolume: 0.5,
+  operaMinVolume: 0.3,
+  screechVolume: 0.5,
+  stingVolume: 0.3,
+  beeVolume: 0.10,
+  jumpscareVolume: 0.35,
+  scareScreechMultiplier: 0.15,
+  jumpscareFadeSeconds: 0.06,
+  beePanSeconds: 0.1
+};
 
 
 class AudioMixer {
@@ -21,6 +36,7 @@ class AudioMixer {
   constructor() {
     // browsers only allow sound after the first click, so it starts switched off
     this.started = false;
+    this.beePan = 0;
 
     // how loud it is right now: 0 = quiet, 1 = as loud as possible
     this.level = 0;
@@ -33,16 +49,57 @@ class AudioMixer {
   }
 
 
-  // ----- starts both tracks (called on the first click, in script.js) -----
+  // ----- starts the loops once, on the first click -----
   start() {
+    if (this.started) {
+      return;
+    }
     // userStartAudio() asks the browser to switch the sound on
     userStartAudio();
+    // Set levels before playback to avoid an initial burst at full volume.
+    operaSound.setVolume(AUDIO_SETTINGS.operaVolume);
+    screechSound.setVolume(0);
+    stingSound.setVolume(AUDIO_SETTINGS.stingVolume);
+    beeSound.setVolume(this.isBeeInsideFrame() ? AUDIO_SETTINGS.beeVolume : 0);
+    this.beePan = constrain(map(mouseX, 0, max(width, 1), -1, 1), -1, 1);
+    beeSound.pan(this.beePan);
     // loop() plays a track over and over
     operaSound.loop();
     screechSound.loop();
-    // start with the screech silent
-    screechSound.setVolume(0);
+    beeSound.loop();
     this.started = true;
+  }
+
+
+  // The wooden frame extends 18 canvas pixels beyond the scaled painting.
+  isBeeInsideFrame() {
+    const border = 18;
+    return mouseX >= painting.left - border &&
+      mouseX <= painting.left + 1050 * painting.scale + border &&
+      mouseY >= painting.top - border &&
+      mouseY <= painting.top + 1278 * painting.scale + border;
+  }
+
+
+  // Trigger once on entry, even if scare ends and restarts in the same frame.
+  onStateChange(previousState, newState) {
+    if (!this.started || previousState === newState) {
+      return;
+    }
+    if (newState === "scare") {
+      jumpscareSound.stop();
+      jumpscareSound.setVolume(AUDIO_SETTINGS.jumpscareVolume);
+      const duration = Math.min(jumpscareSound.duration(), timer.scareLength / 1000);
+      const fade = Math.min(AUDIO_SETTINGS.jumpscareFadeSeconds, duration);
+      // Schedule the fade and playback end on the audio clock, independent of frame rate.
+      // Always start the short clip at zero; never resume the previous scare.
+      jumpscareSound.play(0, 1, AUDIO_SETTINGS.jumpscareVolume, 0, duration);
+      jumpscareSound.setVolume(0, fade, duration - fade);
+    } else if (previousState === "scare" && jumpscareSound.isPlaying()) {
+      // Also fade out if the state exits earlier than expected.
+      jumpscareSound.setVolume(0, AUDIO_SETTINGS.jumpscareFadeSeconds);
+      jumpscareSound.stop(AUDIO_SETTINGS.jumpscareFadeSeconds);
+    }
   }
 
 
@@ -52,27 +109,41 @@ class AudioMixer {
       return;
     }
 
+    // Use canvas coordinates: the bee cursor is outside the painting's scale/translate.
+    const targetPan = constrain(map(mouseX, 0, max(width, 1), -1, 1), -1, 1);
+    const panBlend = 1 - Math.exp(-deltaTime / (AUDIO_SETTINGS.beePanSeconds * 1000));
+    this.beePan = constrain(lerp(this.beePan, targetPan, panBlend), -1, 1);
+    beeSound.pan(this.beePan);
+    // Fade out beyond the visible frame and restore on re-entry without restarting.
+    beeSound.setVolume(this.isBeeInsideFrame() ? AUDIO_SETTINGS.beeVolume : 0, 0.1);
+
     // how close the bee is: 1 = right next to him, 0 = far away
     // map() turns the distance into a number from 1 to 0
     // constrain() stops the number going below 0 or above 1
     let closeness = map(controls.distance, 150, 800, 1, 0);
     closeness = constrain(closeness, 0, 1);
 
-    // the jump scare is all screech; after a sting only soft, calm opera plays
+    // During scare, leave room for the separate jumpscare effect.
     if (state === "scare") {
       closeness = 1;
     }
 
     let operaVolume = 1 - closeness;
     let screechVolume = closeness;
+    if (state === "scare") {
+      screechVolume *= AUDIO_SETTINGS.scareScreechMultiplier;
+    }
     if (state === "stung") {
       operaVolume = 0.35;
       screechVolume = 0;
     }
 
     // setVolume(volume, seconds) fades to the new volume over a short time, so it sounds smooth
-    operaSound.setVolume(operaVolume * 0.3, 0.1);
-    screechSound.setVolume(screechVolume, 0.1);
+    // Keep an audible opera floor, including during scare.
+    operaSound.setVolume(Math.max(AUDIO_SETTINGS.operaMinVolume,
+      operaVolume * AUDIO_SETTINGS.operaVolume), 0.1);
+    // Reduce the maximum screech volume.
+    screechSound.setVolume(screechVolume * AUDIO_SETTINGS.screechVolume, 0.1);
 
     // getLevel() is how loud the sound is right now (about 0 to 0.4)
     // map() turns it into a number from 0 to 1 for the visuals

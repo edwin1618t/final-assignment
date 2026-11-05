@@ -29,10 +29,12 @@ let audio;
 
 // ----- load the sounds before the sketch starts -----
 function preload() {
-  // loadSound() is from p5.sound; these are stand-in tracks we can swap later
-  operaSound = loadSound("assets/sounds/opera-placeholder.mp3");
-  screechSound = loadSound("assets/sounds/screech-placeholder.mp3");
-  stingSound = loadSound("assets/sounds/sting-placeholder.mp3");
+  // Load all five tracks before starting the sketch.
+  operaSound = loadSound("assets/sounds/CW_Opera.wav");
+  screechSound = loadSound("assets/sounds/CW_Screaming.wav");
+  stingSound = loadSound("assets/sounds/CW_bit.wav");
+  beeSound = loadSound("assets/sounds/CW_Bee.wav");
+  jumpscareSound = loadSound("assets/sounds/CW_Jumpscare(2).wav");
 }
 
 
@@ -111,9 +113,14 @@ function fitPainting() {
 
 // ----- changes the screamer's state and remembers when it changed -----
 function changeState(newState) {
+  const previousState = state;
   state = newState;
   // millis() is how many milliseconds have passed since the sketch started
   timer.stateStartTime = millis();
+  // Notify audio immediately, including transitions between draw frames.
+  if (audio) {
+    audio.onStateChange(previousState, newState);
+  }
 }
 
 
