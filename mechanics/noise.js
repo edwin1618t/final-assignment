@@ -23,7 +23,7 @@ class NoiseLayer {
     this.time = 0;
 
     // how much the time grows each frame (how fast the waves flow)
-    this.speed = 0.015;
+    this.speed = 0.025;
 
     // the event happening right now: "none", "boatCrash", "bird" or "passerby"
     this.event = { type: "none", x: 0, y: 0, progress: 0 };
@@ -50,8 +50,8 @@ class NoiseLayer {
   update() {
     // how fast the waves flow: fast at the start, crazy fast when the bee is near his face,
     // and slowly calming down after he has been stung
-    let targetSpeed = map(controls.distance, 800, 100, 0.015, 0.07);
-    targetSpeed = constrain(targetSpeed, 0.015, 0.07);
+    let targetSpeed = map(controls.distance, 800, 100, 0.025, 0.07);
+    targetSpeed = constrain(targetSpeed, 0.025, 0.07);
     if (state === "stung") {
       targetSpeed = 0.003;
     }
