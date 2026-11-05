@@ -110,20 +110,24 @@ function drawScreamer() {
 }
 
 
-// ----- red pimples that grow where the bee stung him -----
+// ----- round pimples that grow where the bee stung him -----
+// ChatGPT assisted with the warm coral colour and smaller highlight.
 function drawPimples() {
+  push();
   noStroke();
   for (let pimple of screamer.pimples) {
-    // each pimple grows over 0.7 seconds, then stays
+    // Keep the original growth: reach 14 artwork units over 0.7 seconds.
     let size = map(millis() - pimple.startTime, 0, 700, 0, 14);
     size = constrain(size, 0, 14);
 
-    fill(230, 100, 90);
+    fill("#E87965");
     ellipse(pimple.x, pimple.y, size, size);
-    // a little shine on top
-    fill(255, 200, 190);
-    ellipse(pimple.x - size * 0.2, pimple.y - size * 0.2, size * 0.3, size * 0.3);
+
+    // A smaller, warm highlight keeps the original rounded appearance.
+    fill("#F6BD98");
+    ellipse(pimple.x - size * 0.2, pimple.y - size * 0.2, size * 0.2, size * 0.2);
   }
+  pop();
 }
 
 
