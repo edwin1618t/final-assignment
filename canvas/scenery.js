@@ -113,7 +113,7 @@ function drawMountains() {
 // ===== LAKE, REFLECTIONS AND TWO SMALL BOATS =====
 
 function drawLake() {
-  drawWavyPart("lakeBlueBand", "#2D609E", [
+  drawStillPart("lakeBlueBand", "#2D609E", [
     [-314, 517],
     [105, 517, 523, 514, 874, 514],
     [898, 514, 916, 518, 916, 524],
@@ -125,7 +125,7 @@ function drawLake() {
     [-314, 557]
   ]);
 
-  drawWavyPart("lakeGoldReflection", "#FFD677", [
+  drawStillPart("lakeGoldReflection", "#FFD677", [
     [-289, 522],
     [88, 522, 465, 519, 782, 519],
     [803, 519, 820, 523, 820, 528],
@@ -137,7 +137,7 @@ function drawLake() {
     [-289, 558]
   ]);
 
-  drawWavyPart("lakeLightReflection", "#FCEEAA", [
+  drawStillPart("lakeLightReflection", "#FCEEAA", [
     [-464, 520],
     [-136, 520, 192, 519, 467, 519],
     [485, 519, 500, 521, 500, 523],
@@ -236,6 +236,12 @@ function drawWavyPart(id, colour, points) {
 // two numbers = a corner, six numbers = a curve
 // wavy = true moves every point up and down a little with noise
 function drawPath(points, closed, wavy) {
+  // The time mechanic bends the sampled background; noise stays in noise.js.
+  if (wavy) {
+    timer.drawBackgroundPath(points, closed);
+    return;
+  }
+
   beginShape();
 
   for (let point of points) {

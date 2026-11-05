@@ -23,12 +23,14 @@ let mouseInPainting = { x: 0, y: 0 };
 // one object for each mechanic
 let noiseLayer;
 let timer;
+let timeBackgroundMask;
 let controls;
 let audio;
 
 
 // ----- load the sounds before the sketch starts -----
 function preload() {
+  timeBackgroundMask = loadImage("assets/time-mask.png");
   // loadSound() is from p5.sound; these are stand-in tracks we can swap later
   operaSound = loadSound("assets/sounds/opera-placeholder.mp3");
   screechSound = loadSound("assets/sounds/screech-placeholder.mp3");
@@ -39,9 +41,10 @@ function preload() {
 // ----- runs once at the start -----
 function setup() {
   createCanvas(windowWidth, windowHeight);
+  frameRate(30);
 
   noiseLayer = new NoiseLayer();
-  timer = new DistractionTimer();
+  timer = new DistractionTimer(timeBackgroundMask);
   controls = new InputControls();
   audio = new AudioMixer();
 }
@@ -53,9 +56,9 @@ function draw() {
   fitPainting();
 
   // 2. update all the mechanics
+  controls.update();
   noiseLayer.update();
   timer.update();
-  controls.update();
   audio.update();
 
   // 3. a random event distracts him, which opens the secret window
@@ -99,7 +102,7 @@ function draw() {
 function fitPainting() {
   // leave 40 pixels of space around it
   // min() picks the smaller number, so the whole painting always fits
-  painting.scale = min((width - 80) / 1050, (height - 80) / 1278);
+  painting.scale = max(0.01, min((width - 80) / 1050, (height - 80) / 1278));
   painting.left = (width - 1050 * painting.scale) / 2;
   painting.top = (height - 1278 * painting.scale) / 2;
 
@@ -133,4 +136,5 @@ function mousePressed() {
 // ----- keep the canvas full screen when the window changes size -----
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
+  if (timer) timer.resetHover();
 }

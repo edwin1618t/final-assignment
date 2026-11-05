@@ -7,6 +7,7 @@
 // and this file was organised with help from Claude (AI). See README.md.
 // ChatGPT assisted with migrating Dawn's eye design, bounded pupil tracking,
 // distance-based pupil size and 20 x 45 eye scaling into this shared version.
+// ChatGPT also helped connect Qiaoyi's timed background attention and reaction.
 
 
 function drawScreamer() {
@@ -16,6 +17,8 @@ function drawScreamer() {
   // push() and pop() keep the moving and flipping just for him
   push();
   translate(runAway.x, runAway.y);
+  // The timer adds a small reaction only while he is watching.
+  timer.applyFigureReaction();
 
   // flip him so he looks the other way: scale(-1, 1) mirrors left and right
   // around the middle of his face (x = 476, so 2 * 476 = 952)
@@ -118,7 +121,13 @@ function drawTrackingEye(eyeX, eyeY) {
   let targetY = mouseInPainting.y;
   let pupilNearness = constrain(map(controls.distance, 40, 350, 1, 0), 0, 1);
 
-  // Keep the team's distraction behaviour: look at the event with small pupils.
+  // Keep Dawn's eye design. Only notice a hovered background after 90 frames.
+  if (state === "watching" && (timer.isHovering() || timer.attention > 0)) {
+    targetX = lerp(eyeX, timer.dentX, timer.attention);
+    targetY = lerp(eyeY, timer.dentY, timer.attention);
+  }
+
+  // Random distractions still take priority over the background hover.
   if (state === "distracted") {
     targetX = noiseLayer.event.x;
     targetY = noiseLayer.event.y;
