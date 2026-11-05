@@ -5,13 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Scream, Disturbed</title>
   <link rel="stylesheet" href="style.css">
+
+  <!-- p5.js library (core only) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.1/p5.min.js"></script>
 </head>
 <body>
-  <script src="noise-random-layer.js"></script>
-  <script src="time-mechanic.js"></script>
-  <script src="input-controls.js"></script>
-  <script src="audio-mechanic.js"></script>
+  <!-- 1. Canvas: drawing the painting (back to front) -->
+  <script src="canvas/scenery.js"></script>
+  <script src="canvas/bridge.js"></script>
+  <script src="canvas/people.js"></script>
+  <script src="canvas/screamer.js"></script>
+
+  <!-- 2. Mechanics: the parts that make it move and react -->
+  <script src="mechanics/noise.js"></script>
+  <script src="mechanics/time.js"></script>
+  <script src="mechanics/input.js"></script>
+  <script src="mechanics/audio.js"></script>
+
+  <!-- 3. Main sketch: setup() and draw() that use everything above -->
   <script src="script.js"></script>
 </body>
 </html>
