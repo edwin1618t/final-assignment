@@ -1,208 +1,263 @@
 // ===== SCREAMER =====
-// Draws the screaming man: his body, his arms, his hands, his eyes and his head (a picture).
-// How he looks depends on the state: watching, distracted, calm or scare.
-// "scare" is the jump scare: his face suddenly fills the whole screen.
+// Draws the screaming man exactly as in our Figma drawing:
+// his dark body, the folds in his robe, his face, eyes, mouth and hands.
+// The white dots in his eyes follow the bee. After a bee sting, a pimple grows and he floats away.
+// drawJumpScare() shows his face huge when you get too close.
+// AI acknowledgement: our Figma drawing was turned into p5.js code with help from AI,
+// and this file was organised with help from Claude (AI). See README.md.
 
 
-// ----- variables -----
-
-// the picture of his head (loaded in preload() in script.js)
-let headImage;
-
-
-// ----- draws the whole screamer -----
 function drawScreamer() {
-  let x = screamer.x;
-  let y = screamer.y;
-  let size = screamer.r;
+  // after a sting he floats away and comes back (see getRunAway() below)
+  let runAway = getRunAway();
 
-  drawBody(x, y, size);
-  drawArms(x, y, size);
-  drawEyes(x, y, size);
-  drawHead(x, y, size);
-  drawHands(x, y, size);
-}
+  // push() and pop() keep the moving and flipping just for him
+  push();
+  translate(runAway.x, runAway.y);
 
+  // flip him so he looks the other way: scale(-1, 1) mirrors left and right
+  // around the middle of his face (x = 476, so 2 * 476 = 952)
+  if (runAway.mirrored) {
+    translate(952, 0);
+    scale(-1, 1);
+  }
 
-// ----- the jump scare: his face slams into the screen, shakes, then disappears -----
-// (this is called at the very end of draw() in script.js, so it covers everything)
-function drawJumpScare() {
-  // how long the jump scare has been going (in milliseconds)
-  let time = timer.timeInState();
+  // a ghost-like tail under him, only while he floats away and back
+  if (runAway.floating) {
+    drawGhostTail();
+  }
 
-  // darken everything behind his face
+  drawStillPart("figureSilhouette", "#10243C", [
+    [381, 821],
+    [346, 783, 342, 727, 359, 674],
+    [374, 617, 423, 589, 474, 592],
+    [536, 586, 574, 632, 582, 691],
+    [598, 742, 578, 791, 568, 824],
+    [590, 862, 595, 899, 593, 960],
+    [595, 1039, 573, 1093, 543, 1140],
+    [525, 1182, 518, 1245, 521, 1278],
+    [293, 1278],
+    [300, 1221, 316, 1165, 321, 1136],
+    [328, 1112, 304, 1096, 304, 1043],
+    [299, 990, 313, 920, 331, 866],
+    [345, 833, 364, 826, 381, 821]
+  ]);
+
+  drawStillPart("figureLeftFold", "#405E98", [
+    [388, 914],
+    [372, 979, 331, 1040, 331, 1080],
+    [329, 1111, 339, 1134, 333, 1170],
+    [325, 1215, 318, 1244, 311, 1270],
+    [322, 1211, 348, 1163, 348, 1118],
+    [346, 1070, 365, 1000, 388, 914]
+  ]);
+
+  drawStillPart("figureRightFold", "#405D94", [
+    [531, 940],
+    [539, 1017, 512, 1093, 490, 1155],
+    [469, 1215, 463, 1244, 458, 1268],
+    [460, 1186, 499, 1101, 515, 1041],
+    [524, 1008, 529, 972, 531, 940]
+  ]);
+
+  drawStillPart("figureFace", "#FFD580", [
+    [479, 620],
+    [433, 617, 405, 655, 403, 699],
+    [397, 744, 417, 771, 434, 802],
+    [449, 828, 453, 879, 478, 880],
+    [505, 887, 511, 827, 524, 799],
+    [541, 760, 554, 718, 548, 684],
+    [544, 645, 514, 620, 479, 620]
+  ]);
+
   noStroke();
-  fill(0, 220);
-  rect(0, 0, width, height);
+  fill("#0B2D4E");
 
-  // the face starts too big and slams down to "fill the screen" size very quickly
-  // map() turns the time (0 to 150 milliseconds) into a zoom (1.6 down to 1)
-  let zoom = map(time, 0, 150, 1.6, 1);
-  zoom = constrain(zoom, 1, 1.6);
+  // figureLeftEye, figureRightEye (made a bit bigger than our) and figureMouth
+  ellipse(441, 721, 22, 42);
+  ellipse(508, 715, 22, 42);
+  ellipse(481, 808, 34, 81);
 
-  // the face is a bit taller than the screen
-  let faceSize = (height * 1.25 / 3.8) * zoom;
+  // the little lights in his eyes that follow the bee
+  drawEyeLights();
 
-  // shake the face around the middle of the screen
-  let faceX = width / 2 + random(-15, 15);
-  let faceY = height / 2 + random(-15, 15);
+  drawStillPart("figureLeftHand", "#FFD580", [
+    [389, 696],
+    [378, 680, 365, 722, 369, 754],
+    [371, 789, 399, 815, 403, 845],
+    [406, 872, 389, 900, 396, 911],
+    [412, 932, 427, 895, 431, 869],
+    [439, 827, 420, 804, 406, 781],
+    [390, 751, 396, 711, 389, 696]
+  ]);
 
-  // the same eyes and head as normal, just huge
-  drawEyes(faceX, faceY, faceSize);
-  drawHead(faceX, faceY, faceSize);
+  drawStillPart("figureRightHand", "#FFD580", [
+    [562, 695],
+    [573, 685, 580, 727, 576, 755],
+    [572, 786, 558, 812, 554, 839],
+    [551, 874, 562, 900, 565, 917],
+    [569, 941, 547, 945, 538, 922],
+    [528, 897, 521, 862, 523, 838],
+    [524, 805, 544, 777, 551, 746],
+    [557, 725, 554, 704, 562, 695]
+  ]);
 
-  // a white flash right at the start that fades away very fast
-  let flash = map(time, 0, 150, 255, 0);
-  flash = constrain(flash, 0, 255);
-  fill(255, flash);
-  rect(0, 0, width, height);
+  // the pimples where the bee stung him
+  drawPimples();
+
+  pop();
 }
 
 
-// ----- the dark wavy coat -----
-function drawBody(x, y, size) {
-  noStroke();
-  fill(35, 35, 55);
-  beginShape();
-  vertex(x - size * 0.5, y + size * 1.2);
-  vertex(x + size * 0.5, y + size * 1.2);
-  vertex(x + size * 1.1, y + size * 2.5);
-  vertex(x + size * 0.9, y + size * 4);
-  vertex(x + size * 1.6, y + size * 7);
-  vertex(x - size * 1.4, y + size * 7);
-  vertex(x - size * 0.8, y + size * 4);
-  vertex(x - size * 1.1, y + size * 2.5);
-  endShape(CLOSE);
-}
-
-
-// ----- the arms: from the hands out to the elbows, then back to the body -----
-function drawArms(x, y, size) {
-  stroke(35, 35, 55);
-  strokeWeight(size * 0.3);
-
-  // left arm
-  line(x - size * 0.8, y + size * 0.9, x - size * 1.1, y + size * 1.8);
-  line(x - size * 1.1, y + size * 1.8, x - size * 0.6, y + size * 2.6);
-
-  // right arm
-  line(x + size * 0.8, y + size * 0.9, x + size * 1.1, y + size * 1.8);
-  line(x + size * 1.1, y + size * 1.8, x + size * 0.6, y + size * 2.6);
-}
-
-
-// ----- the eyes, drawn behind the head picture so they show through the holes -----
-function drawEyes(x, y, size) {
-  // the head picture's size and top left corner
-  let headWidth = size * 2.6;
-  // this keeps the picture's shape, using its real width and height
-  let headHeight = headWidth * headImage.height / headImage.width;
-  let left = x - headWidth / 2;
-  let top = y - headHeight / 2;
-
-  // where the eye holes are in the picture
-  let leftEyeX = left + headWidth * 0.265;
-  let leftEyeY = top + headHeight * 0.27;
-  let rightEyeX = left + headWidth * 0.71;
-  let rightEyeY = top + headHeight * 0.255;
-  let eyeSize = headWidth * 0.17;
-
-  // what he is looking at: your cursor, or the random event that distracted him
-  let targetX = mouseX;
-  let targetY = mouseY;
+// ----- a white dot in each eye that follows the bee, or looks at what distracted him -----
+function drawEyeLights() {
+  // what he looks at: the bee, or the random event when he is distracted
+  let targetX = mouseInPainting.x;
+  let targetY = mouseInPainting.y;
   if (state === "distracted") {
     targetX = noiseLayer.event.x;
     targetY = noiseLayer.event.y;
   }
 
-  // move the pupils towards the target
-  // map() turns the target position on the screen into a small movement inside the eye
-  let lookX = map(targetX, 0, width, -eyeSize * 0.3, eyeSize * 0.3);
-  let lookY = map(targetY, 0, height, -eyeSize * 0.2, eyeSize * 0.2);
+  // atan2() gives the direction from his face to the target (an angle)
+  // cos() and sin() turn that direction into a small movement inside the eye
+  let angle = atan2(targetY - screamer.y, targetX - screamer.x);
+  let lookX = cos(angle) * 6;
+  let lookY = sin(angle) * 13;
 
-  // white of the eyes
-  noStroke();
-  fill(230, 225, 205);
-  ellipse(leftEyeX, leftEyeY, eyeSize * 1.2, eyeSize);
-  ellipse(rightEyeX, rightEyeY, eyeSize * 1.2, eyeSize);
+  // how big the white dots are
+  let dotSize = 9;
 
-  // pupils (smaller when he is calm)
-  let pupilSize = eyeSize * 0.45;
-  if (state === "calm") {
-    pupilSize = eyeSize * 0.3;
+  // while he watches the bee, his pupils grow and shrink every few seconds,
+  // and they grow more the closer the bee is to his face
+  if (state === "watching") {
+    let closeness = constrain(map(controls.distance, 600, 100, 0, 1), 0, 1);
+    // sin() goes up and down slowly; (sin + 1) / 2 turns it into 0 to 1
+    let pulse = (sin(frameCount * 0.05) + 1) / 2;
+    dotSize = 9 + closeness * pulse * 11;
   }
-  fill(20);
-  ellipse(leftEyeX + lookX, leftEyeY + lookY, pupilSize);
-  ellipse(rightEyeX + lookX, rightEyeY + lookY, pupilSize);
-}
 
-
-// ----- the head picture, coloured differently for each state -----
-function drawHead(x, y, size) {
-  let headWidth = size * 2.6;
-  let headHeight = headWidth * headImage.height / headImage.width;
-
-  // the picture itself, a bit yellow like the face in the painting
-  // tint() colours the picture, noTint() turns it off again
-  tint(245, 240, 200);
-  image(headImage, x - headWidth / 2, y - headHeight / 2, headWidth, headHeight);
-  noTint();
-
-  // a see-through colour over the face changes his mood
-  noStroke();
+  // while he is distracted, his pupils are small and steady
   if (state === "distracted") {
-    fill(240, 220, 180, 50);
-  } else if (state === "calm") {
-    fill(240, 180, 140, 70);
-  } else {
-    fill(0, 0);
+    dotSize = 6;
   }
-  ellipse(x, y + headHeight * 0.05, headWidth * 0.6, headHeight * 0.8);
-}
 
-
-// ----- the hands, pressed against his cheeks -----
-function drawHands(x, y, size) {
-  // left hand leans one way, right hand leans the other way
-  drawOneHand(x - size * 0.75, y + size * 0.5, size, -1);
-  drawOneHand(x + size * 0.75, y + size * 0.5, size, 1);
-}
-
-
-// ----- one long thin hand with four fingers and a thumb -----
-// side is -1 for the left hand and 1 for the right hand
-function drawOneHand(x, y, size, side) {
-  // the pale greenish skin colour from the painting
-  let skin = color(190, 185, 145);
-
-  // push() and pop() keep the turning (rotate) just for this hand
-  push();
-  translate(x, y);
-  rotate(side * 0.2);
-
-  // the palm: a long thin oval
   noStroke();
-  fill(skin);
-  ellipse(0, size * 0.15, size * 0.32, size * 0.6);
+  fill(255);
+  ellipse(441 + lookX, 721 + lookY, dotSize, dotSize);
+  ellipse(508 + lookX, 715 + lookY, dotSize, dotSize);
+}
 
-  // the four fingers: this repeats 4 times, drawing one finger each time
-  stroke(skin);
-  strokeWeight(size * 0.07);
-  for (let i = 0; i < 4; i++) {
-    // spread the fingers out across the top of the palm
-    let fingerX = map(i, 0, 3, -size * 0.1, size * 0.1);
 
-    // the middle fingers are a little longer than the outside ones
-    let fingerLength = size * 0.42;
-    if (i === 0 || i === 3) {
-      fingerLength = size * 0.34;
-    }
+// ----- red pimples that grow where the bee stung him -----
+function drawPimples() {
+  noStroke();
+  for (let pimple of screamer.pimples) {
+    // each pimple grows over 0.7 seconds, then stays
+    let size = map(millis() - pimple.startTime, 0, 700, 0, 14);
+    size = constrain(size, 0, 14);
 
-    line(fingerX, 0, fingerX * 1.2, -fingerLength);
+    fill(230, 100, 90);
+    ellipse(pimple.x, pimple.y, size, size);
+    // a little shine on top
+    fill(255, 200, 190);
+    ellipse(pimple.x - size * 0.2, pimple.y - size * 0.2, size * 0.3, size * 0.3);
+  }
+}
+
+
+// ----- a wavy ghost tail that grows smoothly out of the bottom of his robe -----
+function drawGhostTail() {
+  // sin() makes the tail sway from side to side, more towards the tip
+  let sway = sin(frameCount * 0.15) * 30;
+
+  noStroke();
+  fill("#10243C");
+  // curveVertex() joins the points with a smooth curve
+  // the first and last points are further up his robe, so the tail
+  // carries on the same curve as the robe and looks like one body
+  beginShape();
+  curveVertex(300, 1221);
+  curveVertex(293, 1278);
+  curveVertex(300 + sway * 0.2, 1370);
+  curveVertex(345 + sway * 0.5, 1470);
+  curveVertex(420 + sway, 1600);
+  curveVertex(475 + sway * 0.5, 1470);
+  curveVertex(512 + sway * 0.2, 1370);
+  curveVertex(521, 1278);
+  curveVertex(518, 1245);
+  endShape(CLOSE);
+
+  // fill the gap between the robe and the tail
+  rect(293, 1250, 228, 30);
+}
+
+
+// ----- where he is while floating away after a sting -----
+// gives back how far he has moved (x, y) and if he is flipped (mirrored)
+function getRunAway() {
+  let runAway = { x: 0, y: 0, mirrored: false, floating: false };
+  if (state !== "stung") {
+    return runAway;
   }
 
-  // the thumb points in towards his face
-  line(-side * size * 0.12, size * 0.2, -side * size * 0.24, size * 0.0);
+  let time = timer.timeInState();
 
+  // the times for each part, from mechanics/time.js
+  let leaveTime = 700;
+  let goneTime = leaveTime + timer.floatAwayTime;
+  let backTime = goneTime + timer.hideTime;
+
+  if (time > leaveTime && time <= goneTime) {
+    // he turns around and floats off to the edge
+    let amount = map(time, leaveTime, goneTime, 0, 1);
+    runAway.x = lerp(0, screamer.awayX, amount);
+    runAway.y = lerp(0, screamer.awayY, amount);
+    runAway.mirrored = true;
+    runAway.floating = true;
+  } else if (time > goneTime && time <= backTime) {
+    // he stays away, out of the painting, for a while
+    runAway.x = screamer.awayX;
+    runAway.y = screamer.awayY;
+    runAway.floating = true;
+  } else if (time > backTime) {
+    // he floats back to his place on the bridge
+    let amount = constrain(map(time, backTime, backTime + timer.floatBackTime, 1, 0), 0, 1);
+    runAway.x = lerp(0, screamer.awayX, amount);
+    runAway.y = lerp(0, screamer.awayY, amount);
+    runAway.floating = amount > 0;
+  }
+  return runAway;
+}
+
+
+// ----- the jump scare: his face slams into the screen, shakes, then disappears -----
+// (called at the very end of draw() in script.js, so it covers everything)
+function drawJumpScare() {
+  // how long the jump scare has been going (in milliseconds)
+  let time = timer.timeInState();
+
+  // darken everything behind him
+  noStroke();
+  fill(0, 220);
+  rect(0, 0, width, height);
+
+  // the face starts too big and quickly slams down to "fill the screen" size
+  let zoom = constrain(map(time, 0, 150, 1.6, 1), 1, 1.6);
+  let faceScale = (height * 1.1 / 300) * zoom;
+
+  // draw the same screamer, moved to the middle of the screen, made huge and shaking
+  push();
+  translate(width / 2 + noiseLayer.randomShake(), height / 2 + noiseLayer.randomShake());
+  scale(faceScale);
+  // the middle of his face (478, 750) goes to the middle of the screen
+  translate(-478, -750);
+  drawScreamer();
   pop();
+
+  // a white flash at the start that fades away very fast
+  let flash = constrain(map(time, 0, 150, 255, 0), 0, 255);
+  noStroke();
+  fill(255, flash);
+  rect(0, 0, width, height);
 }

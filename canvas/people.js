@@ -1,64 +1,50 @@
 // ===== PEOPLE =====
-// Draws one person in a top hat and a long dark coat,
-// like the two dark figures walking on the bridge in The Scream.
-// It is used for the two people at the far end of the bridge
-// and for the random passerby in mechanics/noise.js.
+// Draws one person in a top hat and a long coat, in the same flat colours as our drawing.
+// Used for the passerby who sometimes walks along the bridge (a random event).
+// AI acknowledgement: this file was written with help from Claude (AI). See README.md.
 
 
 // ----- draws one person -----
-// x and y    = where their feet touch the ground
-// tall       = how tall they are in pixels
-// walking    = true if their arms and legs should swing
+// x and y = where their feet touch the ground
+// tall    = how tall they are
+// walking = true if their legs should swing
 function drawPerson(x, y, tall, walking) {
+  let darkBlue = "#10243C";
 
-  // how far the arms and legs swing
-  // sin() goes up and down like a wave, so the legs go back and forth
+  // how far the legs swing (sin() goes back and forth like a wave)
   let swing = 0;
   if (walking) {
-    swing = sin(frameCount * 0.15) * tall * 0.08;
+    swing = sin(frameCount * 0.15) * tall * 0.06;
   }
 
-  // where each body part goes, worked out from how tall they are
-  let hipY = y - tall * 0.3;
-  let shoulderY = y - tall * 0.72;
-  let headY = y - tall * 0.8;
-
-  // the colours: almost black, like in the painting
-  let coatColour = color(20, 20, 30);
-  let faceColour = color(70, 60, 60);
-
-  // ----- legs: two lines that swing in opposite directions -----
-  stroke(coatColour);
+  // legs: two thick lines with round ends
+  stroke(darkBlue);
   strokeWeight(tall * 0.05);
-  line(x, hipY, x + swing, y);
-  line(x, hipY, x - swing, y);
+  strokeCap(ROUND);
+  line(x, y - tall * 0.3, x + swing, y);
+  line(x, y - tall * 0.3, x - swing, y);
 
-  // ----- shoes: small ellipses at the end of each leg -----
+  // coat: a smooth curvy shape, narrow at the shoulders and wide at the bottom
   noStroke();
-  fill(coatColour);
-  ellipse(x + swing + tall * 0.02, y, tall * 0.08, tall * 0.03);
-  ellipse(x - swing + tall * 0.02, y, tall * 0.08, tall * 0.03);
+  fill(darkBlue);
+  beginShape();
+  curveVertex(x - tall * 0.06, y - tall * 0.72);
+  curveVertex(x - tall * 0.06, y - tall * 0.72);
+  curveVertex(x + tall * 0.06, y - tall * 0.72);
+  curveVertex(x + tall * 0.11, y - tall * 0.45);
+  curveVertex(x + tall * 0.15, y - tall * 0.22);
+  curveVertex(x - tall * 0.15, y - tall * 0.22);
+  curveVertex(x - tall * 0.11, y - tall * 0.45);
+  curveVertex(x - tall * 0.06, y - tall * 0.72);
+  curveVertex(x - tall * 0.06, y - tall * 0.72);
+  endShape(CLOSE);
 
-  // ----- long coat: wider at the bottom than at the shoulders -----
-  quad(
-    x - tall * 0.07, shoulderY,
-    x + tall * 0.07, shoulderY,
-    x + tall * 0.13, hipY + tall * 0.08,
-    x - tall * 0.13, hipY + tall * 0.08
-  );
+  // head
+  fill("#C1AC78");
+  ellipse(x, y - tall * 0.8, tall * 0.11, tall * 0.13);
 
-  // ----- arm: swings the opposite way to the legs -----
-  stroke(coatColour);
-  strokeWeight(tall * 0.045);
-  line(x, shoulderY + tall * 0.03, x - swing * 0.7, hipY);
-
-  // ----- head -----
-  noStroke();
-  fill(faceColour);
-  ellipse(x, headY, tall * 0.11, tall * 0.13);
-
-  // ----- top hat: a flat brim and a tall top -----
-  fill(coatColour);
-  rect(x - tall * 0.09, headY - tall * 0.08, tall * 0.18, tall * 0.025);
-  rect(x - tall * 0.055, headY - tall * 0.2, tall * 0.11, tall * 0.13);
+  // top hat: a brim and a tall top, with rounded corners
+  fill(darkBlue);
+  rect(x - tall * 0.09, y - tall * 0.875, tall * 0.18, tall * 0.025, 5);
+  rect(x - tall * 0.055, y - tall * 0.99, tall * 0.11, tall * 0.12, 4);
 }

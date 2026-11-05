@@ -1,15 +1,24 @@
 // ===== MAIN SKETCH =====
 // This file sets everything up and runs the main loop.
 // The drawing is in the canvas folder, the interaction is in the mechanics folder.
+// AI acknowledgement: this file was written with help from Claude (AI). See README.md.
 
 
 // ----- shared variables -----
 
-// what the screamer is doing: "watching", "distracted", "calm" or "scare"
+// what the screamer is doing: "watching", "distracted", "stung" or "scare"
 let state = "watching";
 
-// position and size of the screamer
-let screamer;
+// the screamer (in painting units)
+// x, y = the middle of his face; faceWidth, faceHeight = the size of his face (the hitbox)
+// awayX, awayY = the edge he floats off to after a sting; pimples = where the bee stung him
+let screamer = { x: 476, y: 750, faceWidth: 146, faceHeight: 260, awayX: 0, awayY: 0, pimples: [] };
+
+// where the painting sits on the screen and how much it is shrunk or grown
+let painting = { left: 0, top: 0, scale: 1 };
+
+// the mouse position in painting units (so it matches the drawing)
+let mouseInPainting = { x: 0, y: 0 };
 
 // one object for each mechanic
 let noiseLayer;
@@ -18,16 +27,18 @@ let controls;
 let audio;
 
 
-// ----- load images before the sketch starts -----
+// ----- load the sounds before the sketch starts -----
 function preload() {
-  headImage = loadImage("assets/head.png");
+  // loadSound() is from p5.sound; these are stand-in tracks we can swap later
+  operaSound = loadSound("assets/sounds/opera-placeholder.mp3");
+  screechSound = loadSound("assets/sounds/screech-placeholder.mp3");
+  stingSound = loadSound("assets/sounds/sting-placeholder.mp3");
 }
 
 
 // ----- runs once at the start -----
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  placeScreamer();
 
   noiseLayer = new NoiseLayer();
   timer = new DistractionTimer();
@@ -38,36 +49,63 @@ function setup() {
 
 // ----- runs every frame -----
 function draw() {
-  // 1. update all the mechanics
+  // 1. work out where the painting goes in the window, and where the mouse is on it
+  fitPainting();
+
+  // 2. update all the mechanics
   noiseLayer.update();
   timer.update();
   controls.update();
   audio.update();
 
-  // 2. a random event distracts him, which opens the secret window
+  // 3. a random event distracts him, which opens the secret window
   if (noiseLayer.eventStarted() && state === "watching") {
     changeState("distracted");
     timer.start();
   }
 
-  // 3. draw everything from back to front
+  // 4. draw the painting from back to front
+  // push() and pop() keep the moving and shrinking just for the painting
+  push();
+  translate(painting.left, painting.top);
+  scale(painting.scale);
+
   drawSky();
-  noiseLayer.drawSkyLines();
   noiseLayer.drawBird();
-  drawWater();
-  noiseLayer.drawWaterLines();
-  noiseLayer.drawBoat();
-  drawLand();
+  drawMountains();
+  drawLake();
+  noiseLayer.drawBoats();
+  drawRightLake();
   drawBridge();
   noiseLayer.drawPasserby();
+  audio.drawFaceDistortion();
   drawScreamer();
-  audio.draw();
+
+  pop();
+
+  // 5. the frame around the painting, then the bee cursor
+  drawFrame();
   controls.draw();
 
-  // 4. the jump scare goes on top of everything
+  // 6. the jump scare and the start message go on top of everything
   if (state === "scare") {
     drawJumpScare();
   }
+  audio.drawStartMessage();
+}
+
+
+// ----- fits the painting (1050 x 1278) into the middle of the window -----
+function fitPainting() {
+  // leave 40 pixels of space around it
+  // min() picks the smaller number, so the whole painting always fits
+  painting.scale = min((width - 80) / 1050, (height - 80) / 1278);
+  painting.left = (width - 1050 * painting.scale) / 2;
+  painting.top = (height - 1278 * painting.scale) / 2;
+
+  // turn the mouse position on the screen into a position on the painting
+  mouseInPainting.x = (mouseX - painting.left) / painting.scale;
+  mouseInPainting.y = (mouseY - painting.top) / painting.scale;
 }
 
 
@@ -79,20 +117,15 @@ function changeState(newState) {
 }
 
 
-// ----- puts the screamer in the right place for the window size -----
-function placeScreamer() {
-  screamer = {
-    // x and y are his position on the screen
-    x: width * 0.42,
-    y: height * 0.6,
-    // r is his size: change 0.09 to make him bigger or smaller
-    r: height * 0.09
-  };
-}
-
-
 // ----- mouse click -----
 function mousePressed() {
+  // the first click only switches the sound on
+  if (!audio.started) {
+    audio.start();
+    return;
+  }
+  // work out where the mouse is on the painting right now, then check the click
+  fitPainting();
   controls.clicked();
 }
 
@@ -100,5 +133,4 @@ function mousePressed() {
 // ----- keep the canvas full screen when the window changes size -----
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  placeScreamer();
 }

@@ -1,108 +1,78 @@
 // ===== BRIDGE =====
-// Draws the wooden bridge, its railing and the two people at the far end.
-// The bridge is drawn in perspective (3D): it comes from far away at the top left,
-// runs steeply down behind the screamer, and leaves the screen at the bottom right.
+// Draws the bridge: the walkway, its shadow, the orange posts and the long rails.
+// The bridge shapes are from our Figma drawing of The Scream, turned into p5.js code with help from AI.
+// AI acknowledgement: this file was organised and commented with help from Claude (AI). See README.md.
 
 
 // ----- draws the whole bridge -----
 function drawBridge() {
-  drawDeck();
-  drawRailing();
+  drawStillPart("bridgeWalkway", "#B06A55", [
+    [-324, 501], [-227, 522],
+    [819, 1403], [-88, 1598]
+  ]);
 
-  // the people are drawn after the railing, so they stand on the bridge in front of it
-  drawFarFigures();
+  drawStillPart("bridgeWalkwayShadow", "#8C4E3B", [
+    [-235, 546], [-122, 564],
+    [708, 1278], [473, 1395]
+  ]);
+
+  // Parts: bridge.post1 to bridge.post4
+  // each post is a list of 4 corners
+  let posts = [
+    [[37, 589], [51, 595], [51, 746], [37, 724]],
+    [[116, 629], [135, 636], [135, 816], [116, 801]],
+    [[238, 693], [278, 700], [278, 939], [238, 923]],
+    [[768, 944], [842, 965], [842, 1364], [773, 1364]]
+  ];
+
+  for (let post of posts) {
+    drawStillPart("bridgePost", "#F47730", post);
+  }
+
+  drawStillPart("bridgeUpperRail", "#FF812D", [
+    [-186, 476], [1193, 1096],
+    [1186, 1177], [-187, 485]
+  ]);
+
+  drawStillPart("bridgeUpperRailHighlight", "#F5C55C", [
+    [-189, 465], [1195, 1075],
+    [1189, 1156], [-190, 474]
+  ]);
+
+  drawStillPart("bridgeMiddleRail", "#FF812D", [
+    [-191, 502], [1104, 1284],
+    [1087, 1364], [-193, 511]
+  ]);
+
+  drawStillPart("bridgeLowerRail", "#FF812D", [
+    [-237, 476], [906, 1482],
+    [875, 1563], [-241, 485]
+  ]);
 }
 
 
-// ----- where the bottom of the railing is, at any x across the screen -----
-// the railing starts near the top of the left edge
-// and reaches the bottom of the screen about three quarters of the way across
-// map() works out where the railing is in between those two points
-function bridgeEdgeY(x) {
-  return map(x, 0, width * 0.74, height * 0.07, height);
+// ===== where people stand on the bridge =====
+// The bridge goes away from us towards the top left, so people further away look smaller.
+// These two functions use the lines of the bridge to work out where and how big a person is.
+
+
+// ----- how far down the screen the edge of the walkway is, at a point across the screen -----
+// map() follows the straight edge of the walkway from (-227, 522) to (819, 1403)
+function walkwayEdgeY(x) {
+  return map(x, -227, 819, 522, 1403);
 }
 
 
-// ----- how tall the railing is, at any x across the screen -----
-// far away (left) it is small, close to us (right) it is big: this is what makes it look 3D
-function railHeightAt(x) {
-  return map(x, 0, width * 0.74, height * 0.03, height * 0.12);
+// ----- where a person's feet go: a little way onto the walkway, in front of the railing -----
+function feetY(x) {
+  return walkwayEdgeY(x) + personHeightAt(x) * 0.3;
 }
 
 
-// ----- how tall a person standing at x should be -----
-// a person is a bit more than twice as tall as the railing next to them
+// ----- how tall a person is at a point across the screen -----
+// the top rail is at about chest height, so a person is a bit taller than the gap
+// between the top rail and the walkway
 function personHeightAt(x) {
-  return railHeightAt(x) * 2.3;
-}
-
-
-// ----- the floor of the bridge -----
-function drawDeck() {
-  noStroke();
-  // fill() sets the colour as (red, green, blue), each from 0 to 255
-  fill(150, 90, 50);
-  beginShape();
-  vertex(0, bridgeEdgeY(0));
-  vertex(width * 0.74, height);
-  vertex(0, height);
-  endShape(CLOSE);
-
-  // the planks: lines that all start from the far end of the bridge and spread out towards us
-  // (lines coming from one point is what makes things look 3D)
-  stroke(120, 70, 40);
-  strokeWeight(2);
-  let farEndX = 0;
-  let farEndY = bridgeEdgeY(0);
-  // this repeats 10 times, drawing one plank line each time
-  for (let i = 1; i <= 10; i++) {
-    let bottomX = map(i, 0, 10, width * 0.74, -width * 0.8);
-    line(farEndX, farEndY, bottomX, height);
-  }
-}
-
-
-// ----- the two dark people standing at the far end of the bridge -----
-// (drawPerson() is in canvas/people.js)
-function drawFarFigures() {
-  // first person, standing on the bridge just behind the screamer
-  // their feet are just in front of the railing, and their size matches the railing there
-  let x1 = width * 0.29;
-  drawPerson(x1, bridgeEdgeY(x1) + height * 0.02, personHeightAt(x1), false);
-
-  // second person, a little closer to us, so a little bigger
-  let x2 = width * 0.35;
-  drawPerson(x2, bridgeEdgeY(x2) + height * 0.02, personHeightAt(x2), false);
-}
-
-
-// ----- the railing along the edge of the bridge -----
-function drawRailing() {
-  stroke(90, 50, 30);
-
-  // the bottom rail runs along the edge of the bridge
-  strokeWeight(6);
-  line(0, bridgeEdgeY(0), width * 0.74, bridgeEdgeY(width * 0.74));
-
-  // the top rail is higher by the railing's height, which grows towards us
-  strokeWeight(10);
-  let endX = width * 0.74;
-  line(0, bridgeEdgeY(0) - railHeightAt(0), endX, bridgeEdgeY(endX) - railHeightAt(endX));
-
-  // the posts: this repeats 19 times, once for each post
-  // the posts get further apart as they come towards us, because closer things look bigger
-  let posts = 18;
-  for (let i = 0; i <= posts; i++) {
-    // amount goes from 0 to 1, and multiplying it by itself spaces the posts out more at the near end
-    let amount = i / posts;
-    amount = amount * amount;
-
-    let x = lerp(0, width * 0.74, amount);
-    let bottom = bridgeEdgeY(x);
-    let top = bottom - railHeightAt(x);
-
-    // posts close to us are thicker
-    strokeWeight(map(x, 0, width * 0.74, 3, 10));
-    line(x, top, x, bottom);
-  }
+  let topRailY = map(x, -186, 1193, 476, 1096);
+  return (walkwayEdgeY(x) - topRailY) * 1.1;
 }

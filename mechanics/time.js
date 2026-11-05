@@ -1,7 +1,8 @@
 // ===== MECHANIC 2: TIME =====
 // Uses millis() to time things the player can't see:
 //  - the secret window (5 to 10 seconds) after something distracts him
-//  - how long he stays calm or keeps lunging before he goes back to watching
+//  - how long the sting lasts, and how long the jump scare lasts, before he goes back to watching
+// AI acknowledgement: this file was written with help from Claude (AI). See README.md.
 
 
 class DistractionTimer {
@@ -15,8 +16,14 @@ class DistractionTimer {
     // when the screamer's state last changed
     this.stateStartTime = 0;
 
-    // how long the calm state and the jump scare last (in milliseconds)
-    this.calmLength = 4000;
+    // how long the stung state (pimple, float away, come back) and the jump scare last (in milliseconds)
+    this.stungLength = 6300;
+
+    // after a sting: how long he floats away, how long he stays gone, and how long to float back
+    // (change hideTime to make him stay away longer or shorter)
+    this.floatAwayTime = 2000;
+    this.hideTime = 2000;
+    this.floatBackTime = 1600;
     this.scareLength = 1200;
   }
 
@@ -24,8 +31,8 @@ class DistractionTimer {
   // ----- opens the secret window with a random length -----
   start() {
     this.windowStart = millis();
-    // a random length between 5 and 10 seconds
-    this.windowLength = random(5000, 10000);
+    // a random length between 5 and 10 seconds (randomWindowLength() is in noise.js)
+    this.windowLength = noiseLayer.randomWindowLength();
   }
 
 
@@ -49,8 +56,8 @@ class DistractionTimer {
       changeState("watching");
     }
 
-    // calm lasts a few seconds
-    if (state === "calm" && this.timeInState() > this.calmLength) {
+    // after a sting he floats away and comes back, then watches again
+    if (state === "stung" && this.timeInState() > this.stungLength) {
       changeState("watching");
     }
 
