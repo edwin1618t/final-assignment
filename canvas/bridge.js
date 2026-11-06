@@ -1,7 +1,7 @@
 // ===== BRIDGE =====
 // Draws the bridge: the walkway, its shadow, the orange posts and the long rails.
-// The bridge shapes are from our Figma drawing of The Scream, turned into p5.js code with help from AI.
-// AI acknowledgement: this file was organised and commented with help from Claude (AI). See README.md.
+// The bridge shapes are from our Figma drawing of The Scream.
+// AI help: see the AI acknowledgement in README.md.
 
 
 // ----- draws the whole bridge -----

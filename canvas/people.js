@@ -1,7 +1,7 @@
 // ===== PEOPLE =====
 // Draws one person in a top hat and a long coat, in the same flat colours as our drawing.
 // Used for the passerby who sometimes walks along the bridge (a random event).
-// AI acknowledgement: this file was written with help from Claude (AI). See README.md.
+// AI help: see the AI acknowledgement in README.md.
 
 
 // ----- draws one person -----

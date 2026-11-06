@@ -1,7 +1,7 @@
 // ===== MAIN SKETCH =====
 // This file sets everything up and runs the main loop.
 // The drawing is in the canvas folder, the interaction is in the mechanics folder.
-// AI acknowledgement: this file was written with help from Claude (AI). See README.md.
+// AI help: see the AI acknowledgement in README.md.
 
 
 // ----- shared variables -----

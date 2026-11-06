@@ -6,7 +6,7 @@
 // drive the rail score and the scream contours without changing playback.
 // Delayed loudness and frequency bands (p5.FFT) carry broad bends out through the layers.
 // This uses p5.sound, the official sound add-on for p5.js (https://p5js.org/reference/p5.sound/).
-// AI acknowledgement: this file was written with help from Claude (AI). See README.md.
+// AI help: see the AI acknowledgement in README.md.
 
 
 // ----- sound tracks (loaded in preload() in sketch.js) -----

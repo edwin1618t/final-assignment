@@ -4,7 +4,8 @@
 // Randomness picks a random event every few seconds: a boat crash, a bird or a passerby.
 // The event distracts the screamer.
 // All positions are in "painting units" (the painting is 1050 wide and 1278 tall).
-// AI acknowledgement: this file was written with help from Claude (AI). See README.md.
+// AI help (Claude): working out the coordinates and numbers for these effects, and
+// writing and commenting the code. I designed how it behaves and tuned it. See README.md.
 
 
 class NoiseLayer {

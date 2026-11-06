@@ -57,10 +57,10 @@ random passers-by who distract him.
 
 | Mechanic | Owner | File |
 | --- | --- | --- |
-| Perlin noise + randomness | [name] | `mechanics/noise.js`: the shimmering colours, boat drift speed, the random seed, the random distractions (boat crash, bird, passer-by) and when they happen, the random length of the secret window, the random edge he floats to after a sting, and the jump-scare shake |
+| Perlin noise + randomness | Edwin Thomas | `mechanics/noise.js`: the shimmering colours, boat drift speed, the random seed, the random distractions (boat crash, bird, passer-by) and when they happen, the random length of the secret window, the random edge he floats to after a sting, and the jump-scare shake |
 | Time-based | Qiaoyi Xin | `mechanics/time.js`: gentle frame-based sine waves, three-second hover, gradual deformation, attention, one-second look, shaking, leaving/recovery, and integration with the existing team event timers |
 | User input | Yuqian Zhang | `mechanics/input.js`: the bee cursor, eye tracking and pupil size, the face hitbox, the sting and pimples, the jump-scare trigger |
-| Audio | [name] | `mechanics/audio.js`: real sound tracks (opera, screaming, sting, bee, jumpscare, distraction cue, sub bass), distance-based mixing, bee panning and pitch, loudness (`p5.Amplitude`) and frequency (`p5.FFT`) analysis that drive the face contours, bridge grain and print effect |
+| Audio | Chenxu (Cwan0294) | `mechanics/audio.js`: real sound tracks (opera, screaming, sting, bee, jumpscare, distraction cue, sub bass), distance-based mixing, bee panning and pitch, loudness (`p5.Amplitude`) and frequency (`p5.FFT`) analysis that drive the face contours, bridge grain and print effect |
 
 Drawing: Qiaoyi Xin (Chloe) created the Figma redraw of the painting and recreated it in p5.js using VS Code.
 
@@ -123,6 +123,8 @@ with a click after the reload.
 - Yuqian Zhang (Dawn)'s eye design uses pale 20 × 45 eye shapes, dark tracking pupils and white highlights. ChatGPT assisted with its implementation and integration into `mechanics/input.js`, called by `canvas/screamer.js`, reusing the shared painting coordinates, distance and distraction state. Visual sizes were refined based on Dawn's feedback
 
 - **Qiaoyi Xin — Drawing and time-based:** Codex helped develop my original drawing into the final p5.js version. ChatGPT helped with the background waves, hover timing and figure reactions, refined through my feedback. These build on course methods such as `frameCount`, `sin()` and `lerp()`. I will further study curve sampling, image-based interaction areas and coordinate conversion using the p5.js reference and small test sketches.
+
+- **Edwin Thomas, Perlin noise + randomness:** I designed how the noise and randomness behave: background waves that speed up as the bee gets closer and calm down after a sting, the colour shimmer, and the random boat crash, bird and passer-by distractions. Claude (Anthropic) helped work out the coordinates and numbers, and write and comment the code in `mechanics/noise.js`, and helped with version control (merging the team's branches and resolving merge conflicts). I tuned and tested it and can explain how it works.
 
 - Our Figma drawing was converted into p5.js shape code with help from AI.
 - Claude (Anthropic) helped write, organise and comment the code in this repository: the mechanic classes, the screamer and jump scare, the window fitting, and the audio mixing. Each file says this in a comment at the top. We tested the code and can explain how each part works (see the comments).

@@ -1,11 +1,11 @@
 // ===== SCENERY =====
 // Draws the background of the painting: the sky, the hills, the water and the shore.
-// The shapes are from our Figma drawing of The Scream, turned into p5.js code with help from AI.
+// The shapes are from our Figma drawing of The Scream.
 // Every shape is a list of points. Two numbers = a straight corner, six numbers = a curve.
 // All numbers are in "painting units": the painting is 1050 wide and 1278 tall
 // (sketch.js shrinks or grows it to fit the window).
 // Background outlines use the time mechanic sine wave; noise.js keeps colour variation.
-// AI acknowledgement: this file was organised and commented with help from Claude (AI). See README.md.
+// AI help: see the AI acknowledgement in README.md.
 
 
 // ===== SKY =====

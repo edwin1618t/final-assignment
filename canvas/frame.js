@@ -2,7 +2,7 @@
 // The painting is tall and thin, but the window can be any shape.
 // So the painting sits in the middle of the window inside a wooden frame,
 // and the space around it is filled with dark blue.
-// AI acknowledgement: this file was written with help from Claude (AI). See README.md.
+// AI help: see the AI acknowledgement in README.md.
 
 
 // ----- covers anything that sticks out of the painting, then draws the frame -----

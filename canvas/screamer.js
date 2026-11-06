@@ -3,8 +3,7 @@
 // his dark body, the folds in his robe, his face, eyes, mouth and hands.
 // The dark pupils follow the bee and enlarge as it approaches. After a bee sting, a pimple grows and he floats away.
 // drawJumpScare() shows his face huge when you get too close.
-// AI acknowledgement: our Figma drawing was turned into p5.js code with help from AI,
-// and this file was organised with help from Claude (AI). See README.md.
+// AI help: see the AI acknowledgement in README.md.
 // ChatGPT assisted with connecting Dawn's eye design to InputControls.
 // Eye tracking, size changes and rendering are in mechanics/input.js.
 // ChatGPT also helped connect Qiaoyi's frame-based attention and figure reaction.
