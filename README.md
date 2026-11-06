@@ -13,7 +13,7 @@ random passers-by who distract him.
 
 1. Click anywhere to start the sound (turn your volume up).
 2. Move the bee (your mouse). Far away you hear opera; the closer it gets to his face, the louder the screech.
-3. Move over the sky, hills, lake or right shoreline for an immediate small dent. Keep the bee within about 12 screen pixels for 90 frames (about 3 seconds at 30 FPS): the dent reaches its maximum and he notices it, looking toward it. Nearby distortion also pulls, tilts and stretches him. He looks for 30 frames (about 1 second). If the bee stays there, he shakes for 24 frames (about 0.8 seconds), then uses the existing leave-and-return animation. Moving away before he leaves cancels this sequence. Moving resets the wait; leaving the background lets the dent recover smoothly over 120 frames (about 4 seconds), without overshooting. The lake surface stays still by itself and only deforms under the bee. Random distractions and the existing face interactions still apply.
+3. While he is watching, hold the bee over one background area. After about 3 seconds he looks towards it for 1 second, then briefly shakes and leaves if the bee stays. Moving away before departure cancels the remaining reaction; the local distortion recovers over about 4 seconds.
 4. Wait for something to distract him (a boat crash on the lake, a bird or a passer-by). His eyes turn to look at it. You then have a secret 5–10 seconds: click his face and the bee stings him. A pimple grows where you clicked, and he turns around and floats off to a random edge, then comes back.
 5. Click his face at the wrong time and he jumps at you.
 6. Press **Space** to restart. This reloads the page and returns to the start panel; click again to start the sound.
@@ -38,7 +38,7 @@ random passers-by who distract him.
 
 - **Drawing:** We drew the painting in Figma; it was rebuilt exactly as named parts (e.g. `skyUpperRedBand`), each a list of points drawn with `beginShape()`, `vertex()` and `bezierVertex()`. The painting is 1050 × 1278 units; `translate()` and `scale()` fit it to any window size.
 - **Perlin noise + randomness:** `noise(x, y, time)` moves every point of the sky, hills and water up and down (added on top of the time mechanic's sine wave), so the whole background waves while the bridge and the screamer stay still. `noise()` also makes the sky and water colours shimmer lighter and darker, and `randomSeed()` / `noiseSeed()` give every visit its own pattern. `random()` picks which event happens and when; in the boat crash, `dist()` detects when two boats hit, and they rock with `rotate()`.
-- **Time-based (Qiaoyi Xin):** The background moves gently using `sin()` and `frameCount`, while the lake stays still until hovered over. Holding the mouse in one area for about 3 seconds makes the distortion grow and catches the figure’s attention. He looks for 1 second, then shakes and leaves if the mouse stays there. Moving away before departure cancels the remaining reaction and lets the background recover smoothly. `lerp()` softens the changes, and the team’s existing leave-and-return animation is reused.
+- **Time-based (Qiaoyi Xin):** `sin()` and `frameCount` create repeating background waves alongside the noise module's Perlin movement. Holding the bee in one area grows a local distortion and starts the figure's look, shake and leave sequence. `lerp()` softens the transitions. See the Time-based section below.
 - **User input:** `InputControls` in `mechanics/input.js` handles the bee cursor, movement-based tilt, pupil tracking and dilation, face hit detection and sting input. It uses the shared painting coordinates and distraction timer. A p5.js `keyPressed()` event handles Space to restart. See the User input section below.
 - **Audio:** The audio mechanic combines interactive mixing with visuals driven by measured sound.
 
@@ -63,6 +63,49 @@ random passers-by who distract him.
 | Audio | Chenxu (Cwan0294) | `mechanics/audio.js`: real sound tracks (opera, screaming, sting, bee, jumpscare, distraction cue, sub bass), distance-based mixing, bee panning and pitch, loudness (`p5.Amplitude`) and frequency (`p5.FFT`) analysis that drive the face contours, bridge grain and print effect |
 
 Drawing: Qiaoyi Xin (Chloe) created the Figma redraw of the painting and recreated it in p5.js using VS Code.
+
+## Time-based — Qiaoyi Xin
+
+My time-based part is in `mechanics/time.js`, updated each frame by
+`sketch.js`. It controls the background waves, hover distortion and
+when the figure reacts.
+
+### Background movement
+
+`sin()` and `frameCount` create gentle, repeating waves in the sky, hills
+and right shoreline. In the current main version, these waves are combined
+with Perlin movement from the noise module. The lake surface skips this
+idle movement but can bend when hovered over.
+
+### Hover and figure reaction
+
+While the figure is `watching`, holding the bee in one background area
+makes a local distortion grow. A black-and-white image identifies the
+interactive areas. Small mouse movements are allowed; moving more than
+about 12 screen pixels restarts the hold timer.
+
+The hold lasts 90 frames, about 3 seconds at the target of 30 FPS.
+The figure then looks towards the distortion for 30 frames, about 1 second.
+If the bee stays, he shakes for 24 frames before leaving. Nearby distortion
+also pulls and tilts his body.
+
+Random events can interrupt the initial hold, but new distractions do not
+interrupt this sequence once the figure has noticed it.
+
+### Recovery and team integration
+
+Moving away before departure cancels the remaining reaction. The local
+distortion recovers over 120 frames, about 4 seconds at 30 FPS. `lerp()`
+smooths the distortion, attention and body movement, including the shake.
+
+The input module draws the eyes, and `figurePoint()` keeps face detection
+aligned as the body moves. The noise module supplies a random departure
+direction. The figure uses the existing `stung` leave-and-return animation
+in `canvas/screamer.js`, without adding a new sting or pimple.
+
+`start()` and `isOpen()` retain the shared distraction window. Existing
+`millis()` timers manage state durations, while `frameCount` controls the
+hover sequence. Frame-based timing takes longer if the actual FPS drops.
 
 ## User input — Yuqian Zhang
 
