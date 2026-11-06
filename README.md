@@ -4,10 +4,11 @@ An interactive p5.js reinterpretation of Edvard Munch's *The Scream* (1893).
 
 ## Inspiration
 
-In the painting, a man on a bridge screams at a burning sky. We asked what would make him
-scream, and made you the cause: your cursor is a bee buzzing around his face. The swirling
-sky and water come from the painting's brush strokes. The two figures on the bridge became
-random passers-by who distract him.
+Our project is based on Edvard Munch’s *The Scream*. The painting is associated with anxiety and the feeling of being overwhelmed. Munch described sensing a scream passing through nature, connecting the figure’s distress with the surrounding landscape.
+
+This made us think about how a small but persistent disturbance can affect someone. We chose a bee because its buzzing and movement can keep drawing attention and become difficult to ignore.
+
+In our version, the user controls this disturbance. The bee can approach the figure and distort the background. Changes in sound and movement build tension, gradually leading to the figure’s reaction.
 
 ## Interaction instructions
 
@@ -161,7 +162,7 @@ The face contours and bridge texture demonstrate the central audio mechanic: act
 
 - **Yuqian Zhang — User input:** ChatGPT / Codex assisted with developing, refining and integrating the user input mechanic, including the bee cursor and movement, eye tracking, face interactions and restart controls. AI also supported code explanations, comments and documentation. I directed the interaction design, reviewed and tested the implementation, and refined it through my feedback.
 
-- **Qiaoyi Xin — Drawing and time-based:** Codex helped develop my original drawing into the final p5.js version. ChatGPT helped with the background waves, hover timing and figure reactions, refined through my feedback. These build on course methods such as `frameCount`, `sin()` and `lerp()`. I will further study curve sampling, image-based interaction areas and coordinate conversion using the p5.js reference and small test sketches.
+- - **Qiaoyi Xin — Drawing and time-based:** Codex (OpenAI) helped turn my Figma redraw into p5.js shapes. ChatGPT (OpenAI) helped write and revise the background waves, hover timing and figure reactions based on my design and feedback.The code uses `frameCount` to measure hover duration, `sin()` for waves and shaking, and `lerp()` for smooth transitions. An image mask selects interactive background areas. `bezierPoint()` samples curves for local bending, while `figurePoint()` keeps face detection aligned with the moving figure. These reactions connect to the team’s existing eye tracking and departure animation.
 
 - **Edwin Thomas, Perlin noise + randomness:** I designed how the noise and randomness behave: background waves that speed up as the bee gets closer and calm down after a sting, the colour shimmer, and the random boat crash, bird and passer-by distractions. Claude (Anthropic) helped work out the coordinates and numbers, and write and comment the code in `mechanics/noise.js`, and helped with version control (merging the team's branches and resolving merge conflicts). I tuned and tested it and can explain how it works.
 
