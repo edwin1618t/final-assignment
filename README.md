@@ -53,50 +53,31 @@ random passers-by who distract him.
 
 ### Drawing
 
-Drawing: Qiaoyi Xin (Chloe) created the Figma redraw of the painting and recreated it in p5.js using VS Code.
+Drawing: Qiaoyi Xin created the Figma redraw of the painting, organising the sky, hills, lake, bridge and figure into separate parts. She recreated these shapes and curves in p5.js using VS Code, preserving the composition and colour palette. The drawing provides the visual base for the team’s animation and interaction mechanics.
 
 ### Time-based — Qiaoyi Xin
 
-My time-based part is in `mechanics/time.js`, updated each frame by
-`sketch.js`. It controls the background waves, hover distortion and
-when the figure reacts.
+My part adds background movement and a timed reaction when the bee stays in one place. The code is in `mechanics/time.js`, and `sketch.js` updates it each frame.
 
 #### Background movement
 
-`sin()` and `frameCount` create gentle, repeating waves in the sky, hills
-and right shoreline. In the current main version, these waves are combined
-with Perlin movement from the noise module. The lake surface skips this
-idle movement but can bend when hovered over.
+I used `sin()` and `frameCount` to make the background move continuously. This is combined with the noise module’s Perlin movement. The lake stays still by itself but can bend when hovered over.
 
 #### Hover and figure reaction
 
-While the figure is `watching`, holding the bee in one background area
-makes a local distortion grow. A black-and-white image identifies the
-interactive areas. Small mouse movements are allowed; moving more than
-about 12 screen pixels restarts the hold timer.
+While the figure is watching, keeping the bee in one background area makes the distortion grow. A black-and-white image marks the areas that can respond. Moving more than about 12 screen pixels restarts the timer.
 
-The hold lasts 90 frames, about 3 seconds at the target of 30 FPS.
-The figure then looks towards the distortion for 30 frames, about 1 second.
-If the bee stays, he shakes for 24 frames before leaving. Nearby distortion
-also pulls and tilts his body.
+After 90 frames, about 3 seconds at 30 FPS, the figure starts looking towards the distortion. He looks for 30 frames, then shakes for 24 frames before leaving. Nearby distortion also pulls and tilts his body.
 
-Random events can interrupt the initial hold, but new distractions do not
-interrupt this sequence once the figure has noticed it.
+Random events can interrupt the first part of the hold. Once he notices the distortion, the reaction continues unless the mouse moves away.
 
 #### Recovery and team integration
 
-Moving away before departure cancels the remaining reaction. The local
-distortion recovers over 120 frames, about 4 seconds at 30 FPS. `lerp()`
-smooths the distortion, attention and body movement, including the shake.
+Moving away before departure cancels the remaining reaction. The distortion returns to normal over 120 frames, about 4 seconds. I used `lerp()` to soften the distortion and the figure’s movement.
 
-The input module draws the eyes, and `figurePoint()` keeps face detection
-aligned as the body moves. The noise module supplies a random departure
-direction. The figure uses the existing `stung` leave-and-return animation
-in `canvas/screamer.js`, without adding a new sting or pimple.
+The input module draws the eyes. `figurePoint()` keeps face detection aligned when the figure moves. Departure uses a random direction from the noise module and the existing leave-and-return animation, without adding a sting or pimple.
 
-`start()` and `isOpen()` retain the shared distraction window. Existing
-`millis()` timers manage state durations, while `frameCount` controls the
-hover sequence. Frame-based timing takes longer if the actual FPS drops.
+The shared distraction and state timers still use `millis()`. My hover sequence uses `frameCount`, so it takes longer if the frame rate drops.
 
 ### User input — Yuqian Zhang
 
