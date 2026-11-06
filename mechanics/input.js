@@ -19,6 +19,7 @@ class InputControls {
 
     // how far the cursor is from the screamer's face (in painting units)
     this.distance = 1000;
+    this.eyeMemory = {};
   }
 
 
@@ -44,6 +45,12 @@ class InputControls {
     let across = (point[0] - screamer.x) / (screamer.faceWidth / 2);
     let down = (point[1] - screamer.y) / (screamer.faceHeight / 2);
     return across * across + down * down < 1;
+  }
+
+
+  // Shared, read-only eligibility for both clicking and the face highlight.
+  canSting() {
+    return audio.started && state === "distracted" && timer.isOpen() && this.isOnFace();
   }
 
 
@@ -148,6 +155,26 @@ class InputControls {
     let pupilWidth = map(pupilNearness, 0, 1, 4, 10);
     let pupilHeight = map(pupilNearness, 0, 1, 10, 24);
 
+    // Smooth only entry/exit of the existing event gaze; normal tracking stays intact.
+    const key = eyeX + "," + eyeY;
+    const memory = this.eyeMemory[key];
+    if (memory && memory.state !== state &&
+        (memory.state === "distracted" || state === "distracted")) {
+      memory.from = { x: memory.x, y: memory.y, w: memory.w, h: memory.h };
+      memory.start = millis();
+    }
+    if (memory && memory.from) {
+      const t = constrain((millis()-memory.start) / AUDIO_DISTRACTION_SETTINGS.eyeTransitionMs, 0, 1);
+      const blend = t*t*(3-2*t);
+      offsetX = lerp(memory.from.x, offsetX, blend);
+      offsetY = lerp(memory.from.y, offsetY, blend);
+      pupilWidth = lerp(memory.from.w, pupilWidth, blend);
+      pupilHeight = lerp(memory.from.h, pupilHeight, blend);
+      if (t === 1) memory.from = null;
+    }
+    this.eyeMemory[key] = { state, x: offsetX, y: offsetY, w: pupilWidth, h: pupilHeight,
+      from: memory ? memory.from : null, start: memory ? memory.start : 0 };
+
     push();
     // Move the drawing origin to this eye's centre, then enlarge all eye parts.
     // The original 14 x 33 outline becomes 20 x 45.
@@ -175,7 +202,7 @@ class InputControls {
     }
 
     // inside the secret window: the bee stings him
-    if (state === "distracted" && timer.isOpen()) {
+    if (this.canSting()) {
       this.sting();
     }
     // at the wrong time: jump scare!

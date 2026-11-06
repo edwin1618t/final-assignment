@@ -31,10 +31,14 @@ let audio;
 // ----- load the sounds before the sketch starts -----
 function preload() {
   timeBackgroundMask = loadImage("assets/time-mask.png");
-  // loadSound() is from p5.sound; these are stand-in tracks we can swap later
-  operaSound = loadSound("assets/sounds/opera-placeholder.mp3");
-  screechSound = loadSound("assets/sounds/screech-placeholder.mp3");
-  stingSound = loadSound("assets/sounds/sting-placeholder.mp3");
+  // Load all tracks before starting the sketch.
+  operaSound = loadSound("assets/sounds/CW_Opera.wav");
+  screechSound = loadSound("assets/sounds/CW_Screaming.wav");
+  stingSound = loadSound("assets/sounds/CW_bit.wav");
+  beeSound = loadSound("assets/sounds/CW_Bee.wav");
+  jumpscareSound = loadSound("assets/sounds/CW_Jumpscare(2).wav");
+  distractionSound = loadSound("assets/sounds/CW_Distrace.wav");
+  subSound = loadSound("assets/sounds/CW_Sub.wav");
 }
 
 
@@ -81,9 +85,13 @@ function draw() {
   noiseLayer.drawBoats();
   drawRightLake();
   drawBridge();
+  audio.drawPanPrint();
+  audio.drawBridgeAudio();
   noiseLayer.drawPasserby();
   audio.drawFaceDistortion();
   drawScreamer();
+  // Face-edge feedback uses the same painting coordinates, above the character.
+  audio.drawDistractionHighlight();
 
   pop();
 
@@ -115,9 +123,14 @@ function fitPainting() {
 
 // ----- changes the screamer's state and remembers when it changed -----
 function changeState(newState) {
+  const previousState = state;
   state = newState;
   // millis() is how many milliseconds have passed since the sketch started
   timer.stateStartTime = millis();
+  // Notify audio immediately, including transitions between draw frames.
+  if (audio) {
+    audio.onStateChange(previousState, newState);
+  }
 }
 
 
