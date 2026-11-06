@@ -196,7 +196,8 @@ class DistractionTimer {
     if (!idleWave) return y;
     let edgeStrength = constrain(min(y, 1278 - y) / 100, 0, 1);
     let phase = TWO_PI * (x / this.waveLength - this.waveTime / this.wavePeriod);
-    return y + sin(phase) * this.waveHeight * edgeStrength;
+    // Qiaoyi's sine wave, plus the Perlin noise wobble from mechanics/noise.js
+    return y + sin(phase) * this.waveHeight * edgeStrength + noiseLayer.wobbleAt(x, y);
   }
 
   drawBackgroundVertex(x, y) {

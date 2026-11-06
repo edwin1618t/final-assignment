@@ -29,7 +29,7 @@ random passers-by who distract him.
 | `canvas/screamer.js` | the screamer and the jump scare |
 | `canvas/frame.js` | the wooden frame around the painting |
 | `mechanics/noise.js` | Perlin noise + randomness mechanic |
-| `mechanics/time(Qiaoyi Xin).js` | time-based mechanic |
+| `mechanics/time.js` | time-based mechanic |
 | `mechanics/input.js` | user input mechanic |
 | `mechanics/audio.js` | audio mechanic |
 
@@ -57,7 +57,7 @@ random passers-by who distract him.
 | Mechanic | Owner | What it does |
 | --- | --- | --- |
 | Perlin noise + randomness | [name] | `mechanics/noise.js`: the shimmering colours, boat drift speed, the random seed, the random distractions (boat crash, bird, passer-by) and when they happen, the random length of the secret window, the random edge he floats to after a sting, and the jump-scare shake |
-| Time-based | Qiaoyi Xin | `mechanics/time(Qiaoyi Xin).js`: gentle frame-based sine waves, three-second hover, gradual deformation, attention, one-second look, shaking, leaving/recovery, and integration with the existing team event timers |
+| Time-based | Qiaoyi Xin | `mechanics/time.js`: gentle frame-based sine waves, three-second hover, gradual deformation, attention, one-second look, shaking, leaving/recovery, and integration with the existing team event timers |
 | User input | [name] | `mechanics/input.js`: the bee cursor, eye tracking and pupil size, the face hitbox, the sting and pimples, the jump-scare trigger |
 | Audio | [name] | `mechanics/audio.js`: opera/screech crossfade, sting sound, loudness meter (`p5.Amplitude`) and the frequency rings around his face (`p5.FFT`) |
 
