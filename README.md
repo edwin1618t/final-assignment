@@ -13,7 +13,7 @@ random passers-by who distract him.
 
 1. Click anywhere to start the sound (turn your volume up).
 2. Move the bee (your mouse). Far away you hear opera; the closer it gets to his face, the louder the screech.
-3. While he is watching, hold the bee over one background area. After about 3 seconds he looks towards it for 1 second, then briefly shakes and leaves if the bee stays. Moving away before departure cancels the remaining reaction; the local distortion recovers over about 4 seconds.
+3. Move over the sky, hills, lake or right shoreline for an immediate small dent. Keep the bee within about 12 screen pixels for 90 frames (about 3 seconds at 30 FPS): the dent reaches its maximum and he notices it, looking toward it. Nearby distortion also pulls, tilts and stretches him. He looks for 30 frames (about 1 second). If the bee stays there, he shakes for 24 frames (about 0.8 seconds), then uses the existing leave-and-return animation. Moving away before he leaves cancels this sequence. Moving resets the wait; leaving the background lets the dent recover smoothly over 120 frames (about 4 seconds), without overshooting. The lake surface stays still by itself and only deforms under the bee. Random distractions and the existing face interactions still apply.
 4. Wait for something to distract him (a boat crash on the lake, a bird or a passer-by). His eyes turn to look at it. You then have a secret 5–10 seconds: click his face and the bee stings him. A pimple grows where you clicked, and he turns around and floats off to a random edge, then comes back.
 5. Click his face at the wrong time and he jumps at you.
 6. Press **Space** to restart. This reloads the page and returns to the start panel; click again to start the sound.
@@ -37,47 +37,38 @@ random passers-by who distract him.
 ## Techniques
 
 - **Drawing:** We drew the painting in Figma; it was rebuilt exactly as named parts (e.g. `skyUpperRedBand`), each a list of points drawn with `beginShape()`, `vertex()` and `bezierVertex()`. The painting is 1050 × 1278 units; `translate()` and `scale()` fit it to any window size.
-- **Perlin noise + randomness:** `noise(x, y, time)` moves every point of the sky, hills and water up and down (added on top of the time mechanic's sine wave), so the whole background waves while the bridge and the screamer stay still. `noise()` also makes the sky and water colours shimmer lighter and darker, and `randomSeed()` / `noiseSeed()` give every visit its own pattern. `random()` picks which event happens and when; in the boat crash, `dist()` detects when two boats hit, and they rock with `rotate()`.
-- **Time-based (Qiaoyi Xin):** `sin()` and `frameCount` create repeating background waves alongside the noise module's Perlin movement. Holding the bee in one area grows a local distortion and starts the figure's look, shake and leave sequence. `lerp()` softens the transitions. See the Time-based section below.
-- **User input:** `InputControls` in `mechanics/input.js` handles the bee cursor, movement-based tilt, pupil tracking and dilation, face hit detection and sting input. It uses the shared painting coordinates and distraction timer. A p5.js `keyPressed()` event handles Space to restart. See the User input section below.
-- **Audio:** The audio mechanic combines interactive mixing with visuals driven by measured sound.
+- **Perlin noise + randomness (Edwin):** `noise(x, y, time)` moves every point of the sky, hills and water up and down (added on top of the time mechanic's sine wave), so the whole background waves while the bridge and the screamer stay still. `noise()` also makes the sky and water colours shimmer lighter and darker, and `randomSeed()` / `noiseSeed()` give every visit its own pattern. `random()` picks which event happens and when; in the boat crash, `dist()` detects when two boats hit, and they rock with `rotate()`.
+- **Time-based (Qiaoyi Xin):** The background moves gently using `sin()` and `frameCount`, while the lake stays still until hovered over. Holding the mouse in one area for about 3 seconds makes the distortion grow and catches the figure’s attention. He looks for 1 second, then shakes and leaves if the mouse stays there. Moving away before departure cancels the remaining reaction and lets the background recover smoothly. `lerp()` softens the changes, and the team’s existing leave-and-return animation is reused.
+- **User input (Yuqian Zhang):** `InputControls` in `mechanics/input.js` handles the bee cursor, movement-based tilt, pupil tracking and dilation, face hit detection and sting input. It uses the shared painting coordinates and distraction timer. A p5.js `keyPressed()` event handles Space to restart. See the User input section below.
+## Team contributions
 
-    - **Distance-based mixing:** Opera and screech loops play together. Distance controls their relative volumes through `setVolume()`, with short fades to smooth changes and a minimum opera level to retain the musical background.
-    - **Bee spatial sound:** `pan()` moves the buzzing between left and right channels. During distraction, the bee becomes louder and receives small, smoothed playback-rate changes that vary its pitch.
-    - **State-based sound:** Distraction adds a looping cue and a low-frequency layer. Gain controls reduce competing sounds, then restore the mix as distraction ends. Sting and jump-scare sounds provide distinct action feedback.
-    - **Loudness analysis:** `p5.Amplitude` measures the overall mix. Separate Web Audio analyser branches measure individual sources without adding another audible playback path.
-    - **Scream contours:** A 1024-bin `p5.FFT` analyses the scream. Measured loudness and low, mid and high frequency energy shape five curved contours around the face. Smoothed responses and delayed samples carry changes through successive contours.
-    - **Bridge texture:** Measured opera loudness and frequency energy change the width and curvature of grain-like ribbons within the wooden rails and posts. Peaks in the distraction cue trigger travelling accents along the bridge.
-    - **Distraction guidance:** The face contours contract during distraction. Bass energy influences their breathing movement, while eligible hovering adds a visual highlight to guide the sting interaction.
-    - **Stereo print effect:** The same smoothed pan value used for the bee sound controls coloured edge impressions. This visual uses the audio control parameter, rather than measured waveform or frequency data.
-
-    The face contours and bridge texture demonstrate the central audio mechanic: actual sound amplitude and frequency influence the image.
-
-## Mechanic ownership
+### Mechanic ownership
 
 | Mechanic | Owner | File |
 | --- | --- | --- |
 | Perlin noise + randomness | Edwin Thomas | `mechanics/noise.js`: the shimmering colours, boat drift speed, the random seed, the random distractions (boat crash, bird, passer-by) and when they happen, the random length of the secret window, the random edge he floats to after a sting, and the jump-scare shake |
 | Time-based | Qiaoyi Xin | `mechanics/time.js`: gentle frame-based sine waves, three-second hover, gradual deformation, attention, one-second look, shaking, leaving/recovery, and integration with the existing team event timers |
-| User input | Yuqian Zhang | `mechanics/input.js`: the bee cursor, eye tracking and pupil size, the face hitbox, the sting and pimples, the jump-scare trigger |
-| Audio | Chenxu (Cwan0294) | `mechanics/audio.js`: real sound tracks (opera, screaming, sting, bee, jumpscare, distraction cue, sub bass), distance-based mixing, bee panning and pitch, loudness (`p5.Amplitude`) and frequency (`p5.FFT`) analysis that drive the face contours, bridge grain and print effect |
+| User input | Yuqian Zhang | `mechanics/input.js`: the bee cursor and movement-based tilt, eye tracking and pupil size, the face hitbox, sting input and pimple records, the jump-scare trigger and Space restart |
+| Audio | Chenxu Wang (Cwan0294) | `mechanics/audio.js`: real sound tracks (opera, screaming, sting, bee, jumpscare, distraction cue, sub bass), distance-based mixing, bee panning and pitch, loudness (`p5.Amplitude`) and frequency (`p5.FFT`) analysis that drive the face contours, bridge grain and print effect |
+
+### Drawing
 
 Drawing: Qiaoyi Xin (Chloe) created the Figma redraw of the painting and recreated it in p5.js using VS Code.
 
-## Time-based — Qiaoyi Xin
+### Time-based — Qiaoyi Xin
 
 My time-based part is in `mechanics/time.js`, updated each frame by
 `sketch.js`. It controls the background waves, hover distortion and
 when the figure reacts.
 
-### Background movement
+#### Background movement
 
 `sin()` and `frameCount` create gentle, repeating waves in the sky, hills
 and right shoreline. In the current main version, these waves are combined
 with Perlin movement from the noise module. The lake surface skips this
 idle movement but can bend when hovered over.
 
-### Hover and figure reaction
+#### Hover and figure reaction
 
 While the figure is `watching`, holding the bee in one background area
 makes a local distortion grow. A black-and-white image identifies the
@@ -92,7 +83,7 @@ also pulls and tilts his body.
 Random events can interrupt the initial hold, but new distractions do not
 interrupt this sequence once the figure has noticed it.
 
-### Recovery and team integration
+#### Recovery and team integration
 
 Moving away before departure cancels the remaining reaction. The local
 distortion recovers over 120 frames, about 4 seconds at 30 FPS. `lerp()`
@@ -107,13 +98,12 @@ in `canvas/screamer.js`, without adding a new sting or pimple.
 `millis()` timers manage state durations, while `frameCount` controls the
 hover sequence. Frame-based timing takes longer if the actual FPS drops.
 
-## User input — Yuqian Zhang
+### User input — Yuqian Zhang
 
 The input mechanic lets the user act as a bee and interact with the screamer.
-The active implementation is `mechanics/input.js`; the current page does not load
-the earlier `input-controls.js` implementation.
+The implementation is in `mechanics/input.js`.
 
-### Bee cursor and movement
+#### Bee cursor and movement
 
 `noCursor()` hides the system cursor on the full-window canvas. The bee is drawn
 with p5.js shapes at `mouseX` and `mouseY`, including animated wings driven by
@@ -126,8 +116,9 @@ into a tilt of up to 30 degrees left or right. `lerp()` makes the bee lean quick
 while moving and return upright more slowly when horizontal movement stops.
 Only the angle is smoothed; the cursor position has no added easing. Rotation
 uses the existing mouse hotspot so it stays aligned with the interaction point.
+The maximum tilt is reached at 4 screen pixels of horizontal movement per frame.
 
-### Eyes and distance
+#### Eyes and distance
 
 `drawTrackingEye()` draws pale 20 × 45 eye shapes with dark blue pupils and small
 white highlights, keeping the original eye centres and head position. The pupils
@@ -135,19 +126,27 @@ follow the bee and grow as its distance from the face decreases. Their movement
 range decreases as they grow, keeping them inside the eyes. During distraction,
 they become small and look towards the random event instead.
 
+While the figure is watching, the time mechanic can redirect his gaze towards
+the background dent as his attention grows. Entering or leaving the `distracted`
+state blends pupil position and size smoothly using per-eye memory and the
+transition duration in `AUDIO_DISTRACTION_SETTINGS.eyeTransitionMs`.
 
 `sketch.js` converts screen coordinates into the painting's 1050 × 1278 coordinate
 system through `fitPainting()`. Input uses this shared `mouseInPainting` position
 for distance and hit detection. `controls.distance` stores the distance to the face
 centre for both the audio and noise mechanics; no separate SVG coordinate
 conversion is used in this version.
+`timer.figurePoint()` also compensates for the time mechanic's figure reaction
+transform before distance, hit detection and normal gaze calculations.
 
-### Clicks, state and restart
+#### Clicks, state and restart
 
 `isOnFace()` checks an elliptical face region. Background clicks do not count as
 stings. After the first click starts audio, `sketch.js` forwards clicks to
-`controls.clicked()`. A face click succeeds only when the state is `distracted`
-and `timer.isOpen()` is true. A face click while `watching` triggers `scare`;
+`controls.clicked()`. `canSting()` requires audio to have started, the state to be
+`distracted`, `timer.isOpen()` to be true and the mouse to be inside the face.
+The audio module also uses this shared check for the face highlight.
+A face click while `watching` triggers `scare`;
 touching the face while watching also triggers it once audio has started.
 
 `sting()` records the sting position and timestamp, requests a random departure
@@ -155,15 +154,31 @@ edge from the noise module, plays the sting sound and changes the state to
 `stung`. The figure's pimple drawing and departure animation remain in
 `canvas/screamer.js`, while `mechanics/time.js` manages the distraction window
 and state durations. Input does not create another distraction timer.
+Only the eight most recent pimple records are retained.
 
 Pressing **Space** invokes the p5.js `keyPressed()` callback and uses the browser's
 `window.location.reload()` API to restart the entire experience. `return false`
 prevents the default Space-key scrolling behaviour. Audio must be started again
 with a click after the reload.
 
+### Audio — Chenxu Wang
+
+The audio mechanic combines interactive mixing with visuals driven by measured sound.
+
+- **Distance-based mixing:** Opera and screech loops play together. Distance controls their relative volumes through `setVolume()`, with short fades to smooth changes and a minimum opera level to retain the musical background.
+- **Bee spatial sound:** `pan()` moves the buzzing between left and right channels. During distraction, the bee becomes louder and receives small, smoothed playback-rate changes that vary its pitch.
+- **State-based sound:** Distraction adds a looping cue and a low-frequency layer. Gain controls reduce competing sounds, then restore the mix as distraction ends. Sting and jump-scare sounds provide distinct action feedback.
+- **Loudness analysis:** `p5.Amplitude` measures the overall mix. Separate Web Audio analyser branches measure individual sources without adding another audible playback path.
+- **Scream contours:** A 1024-bin `p5.FFT` analyses the scream. Measured loudness and low, mid and high frequency energy shape five curved contours around the face. Smoothed responses and delayed samples carry changes through successive contours.
+- **Bridge texture:** Measured opera loudness and frequency energy change the width and curvature of grain-like ribbons within the wooden rails and posts. Peaks in the distraction cue trigger travelling accents along the bridge.
+- **Distraction guidance:** The face contours contract during distraction. Bass energy influences their breathing movement, while eligible hovering adds a visual highlight to guide the sting interaction.
+- **Stereo print effect:** The same smoothed pan value used for the bee sound controls coloured edge impressions. This visual uses the audio control parameter, rather than measured waveform or frequency data.
+
+The face contours and bridge texture demonstrate the central audio mechanic: actual sound amplitude and frequency influence the image.
+
 ## AI acknowledgement
 
-- Yuqian Zhang (Dawn)'s eye design uses pale 20 × 45 eye shapes, dark tracking pupils and white highlights. ChatGPT assisted with its implementation and integration into `mechanics/input.js`, called by `canvas/screamer.js`, reusing the shared painting coordinates, distance and distraction state. Visual sizes were refined based on Dawn's feedback
+- **Yuqian Zhang — User input:** ChatGPT / Codex assisted with developing, refining and integrating the user input mechanic, including the bee cursor and movement, eye tracking, face interactions and restart controls. AI also supported code explanations, comments and documentation. I directed the interaction design, reviewed and tested the implementation, and refined it through my feedback.
 
 - **Qiaoyi Xin — Drawing and time-based:** Codex helped develop my original drawing into the final p5.js version. ChatGPT helped with the background waves, hover timing and figure reactions, refined through my feedback. These build on course methods such as `frameCount`, `sin()` and `lerp()`. I will further study curve sampling, image-based interaction areas and coordinate conversion using the p5.js reference and small test sketches.
 
