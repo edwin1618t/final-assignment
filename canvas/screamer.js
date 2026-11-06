@@ -200,7 +200,7 @@ function getRunAway() {
 
 
 // ----- the jump scare: his face slams into the screen, shakes, then disappears -----
-// (called at the very end of draw() in script.js, so it covers everything)
+// (called at the very end of draw() in sketch.js, so it covers everything)
 function drawJumpScare() {
   // how long the jump scare has been going (in milliseconds)
   let time = timer.timeInState();

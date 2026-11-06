@@ -7,7 +7,7 @@
 
 // ----- covers anything that sticks out of the painting, then draws the frame -----
 function drawFrame() {
-  // where the painting is on the screen (worked out in script.js)
+  // where the painting is on the screen (worked out in sketch.js)
   let left = painting.left;
   let top = painting.top;
   let w = 1050 * painting.scale;

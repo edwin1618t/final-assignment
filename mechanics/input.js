@@ -249,7 +249,7 @@ class InputControls {
     screamer.awayX = edge[0];
     screamer.awayY = edge[1];
 
-    // a short sound effect for the sting (stingSound is loaded in script.js)
+    // a short sound effect for the sting (stingSound is loaded in sketch.js)
     stingSound.play();
 
     changeState("stung");

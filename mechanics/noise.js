@@ -82,7 +82,7 @@ class NoiseLayer {
   }
 
 
-  // ----- tells script.js if an event started this frame -----
+  // ----- tells sketch.js if an event started this frame -----
   eventStarted() {
     return this.justStarted;
   }

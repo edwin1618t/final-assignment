@@ -9,7 +9,7 @@
 // AI acknowledgement: this file was written with help from Claude (AI). See README.md.
 
 
-// ----- sound tracks (loaded in preload() in script.js) -----
+// ----- sound tracks (loaded in preload() in sketch.js) -----
 let operaSound;
 let screechSound;
 let stingSound;

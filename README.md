@@ -23,7 +23,7 @@ random passers-by who distract him.
 | Folder / file | What it does |
 | --- | --- |
 | `index.html` | loads p5.js, p5.sound and all the files below |
-| `script.js` | the main sketch: `setup()`, `draw()`, fitting the painting to the window |
+| `sketch.js` | the main sketch: `setup()`, `draw()`, fitting the painting to the window |
 | `canvas/scenery.js` | sky, hills, lake, shoreline, and the shared `drawStillPart()` / `drawWavyPart()` / `drawHoverPart()` / `drawPath()` helpers |
 | `canvas/bridge.js` | the bridge, and where people stand on it |
 | `canvas/people.js` | `drawPerson()`: the passer-by in a top hat and coat |
@@ -60,7 +60,7 @@ random passers-by who distract him.
 | Perlin noise + randomness | [name] | `mechanics/noise.js`: the shimmering colours, boat drift speed, the random seed, the random distractions (boat crash, bird, passer-by) and when they happen, the random length of the secret window, the random edge he floats to after a sting, and the jump-scare shake |
 | Time-based | Qiaoyi Xin | `mechanics/time.js`: gentle frame-based sine waves, three-second hover, gradual deformation, attention, one-second look, shaking, leaving/recovery, and integration with the existing team event timers |
 | User input | Yuqian Zhang | `mechanics/input.js`: the bee cursor, eye tracking and pupil size, the face hitbox, the sting and pimples, the jump-scare trigger |
-| Audio | [name] | `mechanics/audio.js`: opera/screech crossfade, sting sound, loudness meter (`p5.Amplitude`) and the frequency rings around his face (`p5.FFT`) |
+| Audio | [name] | `mechanics/audio.js`: real sound tracks (opera, screaming, sting, bee, jumpscare, distraction cue, sub bass), distance-based mixing, bee panning and pitch, loudness (`p5.Amplitude`) and frequency (`p5.FFT`) analysis that drive the face contours, bridge grain and print effect |
 
 Drawing: Qiaoyi Xin (Chloe) created the Figma redraw of the painting and recreated it in p5.js using VS Code.
 
@@ -93,7 +93,7 @@ range decreases as they grow, keeping them inside the eyes. During distraction,
 they become small and look towards the random event instead.
 
 
-`script.js` converts screen coordinates into the painting's 1050 × 1278 coordinate
+`sketch.js` converts screen coordinates into the painting's 1050 × 1278 coordinate
 system through `fitPainting()`. Input uses this shared `mouseInPainting` position
 for distance and hit detection. `controls.distance` stores the distance to the face
 centre for both the audio and noise mechanics; no separate SVG coordinate
@@ -102,7 +102,7 @@ conversion is used in this version.
 ### Clicks, state and restart
 
 `isOnFace()` checks an elliptical face region. Background clicks do not count as
-stings. After the first click starts audio, `script.js` forwards clicks to
+stings. After the first click starts audio, `sketch.js` forwards clicks to
 `controls.clicked()`. A face click succeeds only when the state is `distracted`
 and `timer.isOpen()` is true. A face click while `watching` triggers `scare`;
 touching the face while watching also triggers it once audio has started.
@@ -135,7 +135,6 @@ with a click after the reload.
 
 - p5.js reference: https://p5js.org/reference/
 - p5.sound (official p5.js sound add-on), used for `loadSound()`, `setVolume()` and `p5.Amplitude`: https://p5js.org/reference/p5.sound/
-- `assets/sounds/opera-placeholder.mp3`, `screech-placeholder.mp3` and `sting-placeholder.mp3` are simple stand-in sounds made for this project. [Replace with your final tracks and credit their source here.]
 
 ## Time mechanic course references
 
@@ -146,7 +145,6 @@ with a click after the reload.
 - Image pixel lookup: https://p5js.org/reference/p5.Image/get/
 - Additional p5.js drawing method: https://p5js.org/reference/p5/bezierPoint/ — interpolates along a cubic curve; the time mechanic samples both axes before applying the local dent. This method is not claimed to be explicitly covered in the reviewed lessons.
 
-The team currently uses `script.js` as its main entry file. The brief calls the main entry `sketch.js`; confirm the final naming as a team before submission. This integration preserves the shared entry rather than renaming it independently.
 
 -  Audio assets and credits
 
