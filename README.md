@@ -29,7 +29,7 @@ random passers-by who distract him.
 | `canvas/screamer.js` | the screamer and the jump scare |
 | `canvas/frame.js` | the wooden frame around the painting |
 | `mechanics/noise.js` | Perlin noise + randomness mechanic |
-| `mechanics/time.js` | time-based mechanic |
+| `mechanics/time(Qiaoyi Xin).js` | time-based mechanic |
 | `mechanics/input.js` | user input mechanic |
 | `mechanics/audio.js` | audio mechanic |
 
@@ -37,7 +37,7 @@ random passers-by who distract him.
 
 - **Drawing:** We drew the painting in Figma; it was rebuilt exactly as named parts (e.g. `skyUpperRedBand`), each a list of points drawn with `beginShape()`, `vertex()` and `bezierVertex()`. The painting is 1050 × 1278 units; `translate()` and `scale()` fit it to any window size.
 - **Perlin noise + randomness:** `noise()` makes the background colours shimmer lighter and darker, and `randomSeed()` / `noiseSeed()` give every visit its own pattern. `random()` picks which event happens and when; in the boat crash, `dist()` detects when two boats hit, and they rock with `rotate()`.
-- **Time-based:** The default background uses Qiaoyi's original `sin()` rule: height 8, wavelength 700 and a 240-frame cycle (about 8 seconds at 30 FPS). It shifts the original vertices and cubic control points together, without noise displacement. The lake skips this idle sine wave but shares the stronger local hover dent (maximum depth 165 painting units, radius 300). The hover uses `frameCount`: 90 frames to notice the background disturbance and 120 frames to recover. Moving the mouse lowers the strength gradually instead of snapping it back. `lerp()` smooths the dent position, strength, attention and figure pull. The face hitbox follows the figure transform, including the shake. After noticing, a 30-frame look and a 24-frame shake lead into the existing leave-and-return state. Random distractions wait while he is noticing the hover. The existing `millis()` timers for distraction, floating away, returning and jump scares are retained so the team's input and character code keep working. At lower actual FPS, the frame-based intervals take longer in real time. A black-and-white image loaded with p5.js `loadImage()` and read with `get()` limits hover to the background. `bezierPoint()` samples the curves so the dent can bend their middles.
+- **Time-based (Qiaoyi Xin):** The background moves gently using `sin()` and `frameCount`, while the lake stays still until hovered over. Holding the mouse in one area for about 3 seconds makes the distortion grow and catches the figure’s attention. He looks for 1 second, then shakes and leaves if the mouse stays there. Moving away before departure cancels the remaining reaction and lets the background recover smoothly. `lerp()` softens the changes, and the team’s existing leave-and-return animation is reused.
 - **User input:** `mouseX`/`mouseY`, his face is the hitbox (an oval check), bounded dark pupils follow the bee and enlarge with proximity; during distraction they look at the event, `mousePressed()` for the click, `noCursor()` with our bee drawn in p5 (wings flutter with `sin()` and `rotate()`).
 - **Audio:** The audio mechanic combines interactive mixing with visuals driven by measured sound.
 
@@ -57,17 +57,18 @@ random passers-by who distract him.
 | Mechanic | Owner | What it does |
 | --- | --- | --- |
 | Perlin noise + randomness | [name] | `mechanics/noise.js`: the shimmering colours, boat drift speed, the random seed, the random distractions (boat crash, bird, passer-by) and when they happen, the random length of the secret window, the random edge he floats to after a sting, and the jump-scare shake |
-| Time-based | Qiaoyi Xin | `mechanics/time.js`: gentle frame-based sine waves, three-second hover, gradual deformation, attention, one-second look, shaking, leaving/recovery, and integration with the existing team event timers |
+| Time-based | Qiaoyi Xin | `mechanics/time(Qiaoyi Xin).js`: gentle frame-based sine waves, three-second hover, gradual deformation, attention, one-second look, shaking, leaving/recovery, and integration with the existing team event timers |
 | User input | [name] | `mechanics/input.js`: the bee cursor, eye tracking and pupil size, the face hitbox, the sting and pimples, the jump-scare trigger |
 | Audio | [name] | `mechanics/audio.js`: opera/screech crossfade, sting sound, loudness meter (`p5.Amplitude`) and the frequency rings around his face (`p5.FFT`) |
 
-Drawing: our team's Figma redraw of the painting.
+Drawing: Qiaoyi Xin (Chloe) created the Figma redraw of the painting and recreated it in p5.js using VS Code.
 
 ## AI acknowledgement
 
-- ChatGPT assisted Qiaoyi with adapting the three-second hover into `DistractionTimer`, preserving the team timer interfaces and connecting the background and eye drawing. The hover uses frame differences, a pixel mask, distance-based deformation and `lerp()`; the mask only selects interaction areas, while the painting is still drawn with p5.js shapes.
 
-- Yuqian Zhang (Dawn)'s eye design uses pale 20 × 45 eye shapes, dark tracking pupils and white highlights. ChatGPT assisted with its implementation and integration into `mechanics/input.js`, called by `canvas/screamer.js`, reusing the shared painting coordinates, distance and distraction state. Visual sizes were refined based on Dawn's feedback.
+- Yuqian Zhang (Dawn)'s eye design uses pale 20 × 45 eye shapes, dark tracking pupils and white highlights. ChatGPT assisted with its implementation and integration into `mechanics/input.js`, called by `canvas/screamer.js`, reusing the shared painting coordinates, distance and distraction state. Visual sizes were refined based on Dawn's feedback
+
+- **Qiaoyi Xin — Drawing and time-based:** Codex helped develop my original drawing into the final p5.js version. ChatGPT helped with the background waves, hover timing and figure reactions, refined through my feedback. These build on course methods such as `frameCount`, `sin()` and `lerp()`. I will further study curve sampling, image-based interaction areas and coordinate conversion using the p5.js reference and small test sketches.
 
 - Our Figma drawing was converted into p5.js shape code with help from AI.
 - Claude (Anthropic) helped write, organise and comment the code in this repository: the mechanic classes, the screamer and jump scare, the window fitting, and the audio mixing. Each file says this in a comment at the top. We tested the code and can explain how each part works (see the comments).
