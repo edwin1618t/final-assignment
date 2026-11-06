@@ -41,6 +41,7 @@ In our version, the user controls this disturbance. The bee can approach the fig
 - **Perlin noise + randomness (Edwin):** `noise(x, y, time)` moves every point of the sky, hills and water up and down (added on top of the time mechanic's sine wave), so the whole background waves while the bridge and the screamer stay still. `noise()` also makes the sky and water colours shimmer lighter and darker, and `randomSeed()` / `noiseSeed()` give every visit its own pattern. `random()` picks which event happens and when; in the boat crash, `dist()` detects when two boats hit, and they rock with `rotate()`.
 - **Time-based (Qiaoyi Xin):** The background moves gently using `sin()` and `frameCount`, while the lake stays still until hovered over. Holding the mouse in one area for about 3 seconds makes the distortion grow and catches the figure’s attention. He looks for 1 second, then shakes and leaves if the mouse stays there. Moving away before departure cancels the remaining reaction and lets the background recover smoothly. `lerp()` softens the changes, and the team’s existing leave-and-return animation is reused.
 - **User input (Yuqian Zhang):** `InputControls` in `mechanics/input.js` handles the bee cursor, movement-based tilt, pupil tracking and dilation, face hit detection and sting input. It uses the shared painting coordinates and distraction timer. A p5.js `keyPressed()` event handles Space to restart. See the User input section below.
+- **Audio** :(Chenxu Wang)Developed a bidirectional audiovisual interactive system combining spatialized dynamic mixing with real-time, audio-driven generative visuals—utilizing distance and behavioral states for sound design while mapping measured amplitude and FFT spectral energy directly to procedural face contours and bridge deformations.
 ## Team contributions
 
 ### Mechanic ownership
@@ -188,9 +189,7 @@ The face contours and bridge texture demonstrate the central audio mechanic: act
 - Additional p5.js drawing method: https://p5js.org/reference/p5/bezierPoint/ — interpolates along a cubic curve; the time mechanic samples both axes before applying the local dent. This method is not claimed to be explicitly covered in the reviewed lessons.
 
 
--  Audio assets and credits
-
-    The final audio assets replace the original placeholder tracks.
+## Audio assets and credits
 
     The opera background was generated using ElevenLabs. All other sounds were originally designed, synthesised and recorded by the audio contributor (GitHub: Cwan0294), using Serum, Sub Zero Bass, Augmented VOICES and other VST instruments.
 
